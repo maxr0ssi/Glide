@@ -1,0 +1,92 @@
+# Glide Configuration File
+
+# Camera settings
+camera_index: 0          # Camera device index (0 for default)
+frame_width: 960         # Frame width in pixels
+mirror: true            # Mirror the camera feed
+
+# Simple touch detection (for visualization only)
+touch_threshold_pixels: 50  # Maximum distance in pixels to consider fingers "touching"
+
+# TouchProof multi-signal detection
+touchproof:
+  # Base proximity thresholds (normalized by finger length)
+  proximity_enter: 0.25       # Distance to consider "close"
+  proximity_exit: 0.40        # Distance to consider "far"
+  proximity_hard_cap: 0.50    # Auto-fail if farther than this
+  
+  # Angle thresholds (degrees)
+  angle_enter_deg: 20.0       # Max angle for parallel fingers
+  angle_exit_deg: 28.0        # Exit angle threshold
+  angle_hard_cap_deg: 45.0    # Auto-fail if angle larger than this
+  
+  # Distance interaction parameters
+  distance_near_px: 200       # Finger length in pixels when close
+  distance_far_px: 50         # Finger length in pixels when far
+  k_d: 0.30                   # Proximity distance coefficient
+  k_theta: 4.0                # Angle distance coefficient
+  
+  
+  
+  # MFC (Micro-Flow Cohesion) parameters
+  mfc_window_frames: 5        # Optical flow history window
+  mfc_corr_min: 0.70          # Minimum correlation threshold
+  mfc_mag_ratio_min: 0.6      # Min magnitude ratio
+  mfc_mag_ratio_max: 1.4      # Max magnitude ratio
+  
+  # Temporal stability
+  frames_to_enter: 3          # Frames to confirm touch
+  frames_to_exit: 3           # Frames to confirm release
+  
+  # Fused score thresholds
+  fused_enter_threshold: 0.80 # Fused score to trigger touch (80%)
+  fused_exit_threshold: 0.60  # Fused score to release touch (60%)
+  
+  # Signal smoothing
+  ema_alpha: 0.3              # Exponential moving average factor
+  smooth_proximity: true      # Apply EMA to proximity signal
+  
+  # Legacy parameters (kept for compatibility)
+  correlation_frames: 5       # Used for correlation signal
+  correlation_min: 0.70       # Not actively used
+  visibility_asymmetry_min: 0.12  # Not actively used
+  
+  # Legacy weights (overridden by distance-aware fusion)
+  weight_proximity: 0.60      # Base proximity weight
+  weight_angle: 0.20          # Base angle weight
+  weight_correlation: 0.0     # Disabled
+  weight_visibility: 0.0      # Disabled
+
+# Hand detection
+gates:
+  presence_conf: 0.7    # Minimum confidence for hand presence
+  
+# Kinematics tracking
+kinematics:
+  ema_alpha: 0.35       # Exponential moving average smoothing
+  buffer_frames: 24     # Trail buffer size
+  frame_lookback: 5     # Frames to look back for swish detection
+
+# Two-finger correlation (legacy - not used with TouchProof)
+two_finger:
+  min_vel_corr: 0.7     # Minimum velocity correlation
+  max_sep_cv: 0.2       # Maximum separation coefficient of variation
+
+# Circular gesture detection
+circular:
+  min_angle_deg: 90.0        # Minimum angle to trigger (quarter circle)
+  max_angle_deg: 720.0       # Maximum angle before stopping (2 full circles)
+  min_speed: 1.5             # Minimum speed to start detection
+  exit_speed_factor: 0.5     # Exit when speed drops below min_speed * factor
+  max_duration_ms: 1000      # Maximum gesture duration
+  cooldown_ms: 500           # Cooldown between gestures
+  angle_tolerance_deg: 45.0  # Tolerance for direction consistency
+
+# Display settings
+show_fps: true          # Show FPS in HUD
+show_landmarks: true    # Show hand landmarks
+show_confidence: true   # Show confidence in swipe label
+
+# Logging
+log_level: INFO         # DEBUG, INFO, WARNING, ERROR
+log_file: null          # Optional log file path
