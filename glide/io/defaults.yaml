@@ -82,6 +82,17 @@ circular:
   cooldown_ms: 500           # Cooldown between gestures
   angle_tolerance_deg: 45.0  # Tolerance for direction consistency
 
+# macOS scrolling
+scroll:
+  enabled: true              # Enable scroll functionality
+  pixels_per_degree: 2.22    # 180° = 400 pixels
+  max_velocity: 100.0        # Maximum scroll velocity (pixels per event)
+  acceleration_curve: 1.5    # Exponential acceleration factor
+  respect_system_preference: true  # Use natural scrolling if enabled
+  show_hud: true            # Show visual feedback
+  hud_fade_duration_ms: 500 # HUD fade animation duration
+  hud_position: "bottom-right"  # HUD position on screen
+
 # Display settings
 show_fps: true          # Show FPS in HUD
 show_landmarks: true    # Show hand landmarks

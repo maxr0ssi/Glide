@@ -11,6 +11,7 @@ from glide.features.poses import check_hand_pose
 from glide.gestures.touchproof import TouchProofDetector
 from glide.gestures.circular import CircularDetector
 from glide.ui.overlay import draw_info
+from glide.runtime.actions.scroll import ScrollDispatcher, ScrollConfig
 
 
 class Pipeline:
@@ -29,6 +30,19 @@ class Pipeline:
         self.config = config
         self.sink = sink
         self.display = display
+        
+        # Initialize scroll dispatcher if enabled
+        self.scroll_dispatcher = None
+        if config.scroll.enabled:
+            scroll_config = ScrollConfig(
+                pixels_per_degree=config.scroll.pixels_per_degree,
+                max_velocity=config.scroll.max_velocity,
+                acceleration_curve=config.scroll.acceleration_curve,
+                respect_system_preference=config.scroll.respect_system_preference,
+                show_hud=config.scroll.show_hud,
+                hud_fade_duration_ms=config.scroll.hud_fade_duration_ms,
+            )
+            self.scroll_dispatcher = ScrollDispatcher(scroll_config)
         
         # Initialize processors
         self.kinematics = KinematicsTracker(
@@ -73,6 +87,10 @@ class Pipeline:
                     self.sink.emit(event)
                     self.last_event = event
                     self.event_display_time = time.time()
+                    
+                    # Dispatch to scroll action if enabled
+                    if self.scroll_dispatcher:
+                        self.scroll_dispatcher.dispatch(event)
                 
                 # Update FPS
                 frame_count += 1

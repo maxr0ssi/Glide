@@ -6,12 +6,11 @@ Welcome to the Glide documentation! This directory contains technical documentat
 
 ### Core Documentation
 
-- **[Architecture Overview](ARCHITECTURE.md)** - System architecture, components, and design principles
-- **[TouchProof](TOUCHPROOF.md)** - Advanced fingertip contact detection algorithm
-
-### Design Documents
-
-- **[Original Design](designs/glide/DESIGN.md)** - Reference architecture and component specifications
+- **[Architecture Overview](Architecture.md)** - System architecture, components, and design principles
+- **[TouchProof](TouchProof.md)** - Advanced fingertip contact detection algorithm
+- **[Scrolling Guide](Scrolling.md)** - How to use the macOS scrolling feature
+- **[API Reference](Api.md)** - Developer API documentation
+- **[Dependencies](Dependencies.md)** - External dependencies and requirements
 
 ## Quick Links
 
@@ -21,8 +20,7 @@ Welcome to the Glide documentation! This directory contains technical documentat
 - [Usage Examples](../README.md#usage)
 
 ### For Developers
-- [Contributing Guidelines](../CONTRIBUTING.md) *(coming soon)*
-- [API Reference](https://github.com/yourusername/glide/wiki) *(coming soon)*
+- [API Reference](Api.md)
 
 ## Overview
 
@@ -34,18 +32,10 @@ Glide uses advanced computer vision techniques to detect hand gestures through a
 
 ## Getting Started
 
-1. Review the [Architecture](ARCHITECTURE.md) to understand the system design
-2. Read about [TouchProof](TOUCHPROOF.md) for details on the touch detection algorithm
-3. Check the [configuration file](../glide/io/defaults.yaml) for tuning parameters
-
-## Contributing
-
-We welcome contributions! Please ensure you understand the architecture before making changes. Key areas for contribution:
-
-- Additional gesture types
-- Performance optimizations
-- Multi-hand support
-- Platform-specific integrations
+1. Review the [Architecture](Architecture.md) to understand the system design
+2. Read about [TouchProof](TouchProof.md) for details on the touch detection algorithm
+3. Learn about [Scrolling](Scrolling.md) to use gesture-based scrolling
+4. Check the [configuration file](../glide/io/defaults.yaml) for tuning parameters
 
 ## License
 

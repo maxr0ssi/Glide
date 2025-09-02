@@ -33,7 +33,7 @@ class JsonSink:
 class RingBufferLogger:
     def __init__(self, capacity: int = 256) -> None:
         self.capacity = capacity
-        self._buf: Deque[SwishEvent] = deque(maxlen=capacity)
+        self._buf: Deque[CircularEvent] = deque(maxlen=capacity)
 
     def append(self, event: CircularEvent) -> None:
         self._buf.append(event)

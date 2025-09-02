@@ -39,6 +39,18 @@ class TwoFingerConfig(BaseModel):
     max_sep_cv: float = Field(0.2, ge=0.0, le=1.0, description="Maximum separation coefficient of variation")
 
 
+class ScrollConfig(BaseModel):
+    """Configuration for scroll behavior."""
+    enabled: bool = Field(True, description="Enable scroll functionality")
+    pixels_per_degree: float = Field(2.22, ge=0.1, le=10.0, description="Pixels per degree of rotation")
+    max_velocity: float = Field(100.0, ge=10.0, le=500.0, description="Maximum scroll velocity (pixels/event)")
+    acceleration_curve: float = Field(1.5, ge=1.0, le=3.0, description="Acceleration curve exponent")
+    respect_system_preference: bool = Field(True, description="Respect natural scrolling preference")
+    show_hud: bool = Field(True, description="Show HUD overlay")
+    hud_fade_duration_ms: int = Field(500, ge=100, le=2000, description="HUD fade duration (ms)")
+    hud_position: str = Field("bottom-right", description="HUD position on screen")
+
+
 class CircularConfig(BaseModel):
     """Configuration for circular gesture detection."""
     min_angle_deg: float = Field(90.0, ge=45.0, le=180.0, description="Minimum angle to trigger (degrees)")
@@ -133,6 +145,7 @@ class AppConfig(BaseModel):
     two_finger: TwoFingerConfig = Field(default_factory=TwoFingerConfig)
     touchproof: TouchProofConfig = Field(default_factory=TouchProofConfig)
     circular: CircularConfig = Field(default_factory=CircularConfig)
+    scroll: ScrollConfig = Field(default_factory=ScrollConfig)
     
     @classmethod
     def from_yaml(cls, path: Optional[str]) -> "AppConfig":

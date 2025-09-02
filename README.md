@@ -16,6 +16,7 @@ Conenct your index and middle finger to activate. Then trace a tidy little circl
 
 - Python 3.10+
 - Webcam
+- macOS (for scrolling feature)
 
 ## Installation
 
@@ -31,6 +32,17 @@ pip install -r requirements.txt
 # Set up MediaPipe model files
 python setup_models.py
 ```
+
+### macOS Scrolling Setup
+
+To enable scrolling on macOS, you need to grant Accessibility permission:
+
+1. Go to **System Preferences** > **Security & Privacy** > **Privacy** > **Accessibility**
+2. Click the lock to make changes
+3. Add your Terminal app (or IDE if running from there)
+4. Restart the Glide application
+
+The scrolling feature uses PyObjC to generate native scroll events.
 
 ## Usage
 
@@ -48,12 +60,19 @@ python -m glide.app.main --model models/hand_landmarker.task
 
 ### Controls
 
-- **Q** or **ESC**: Quit
-- (temporary) Preview window shows:
-  - Touch detection status (green/red circle)
-  - Signal strength bars
-  - Hand landmarks
-  - FPS counter
+- **Touch Detection**: Connect your index and middle fingertips to activate
+- **Scrolling**: While touching, make circular gestures:
+  - **Clockwise** → Scroll down
+  - **Counter-clockwise** → Scroll up
+  - Larger circles = faster scrolling
+- **Exit**: Press 'q' or ESC to quit
+
+Preview window shows:
+- Touch detection status (green/red circle)
+- Signal strength bars
+- Detected gestures
+- Hand landmarks
+- FPS counter
 
 ## How It Works
 
