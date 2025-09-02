@@ -16,6 +16,7 @@ from glide.gestures.touchproof import TouchProofDetector
 from glide.gestures.circular import CircularDetector
 from glide.ui.overlay import draw_info
 from glide.io.event_output import JsonSink, RingBufferLogger
+from glide.runtime.actions.scroll import ScrollDispatcher, ScrollConfig
 
 
 def parse_args() -> argparse.Namespace:
@@ -48,6 +49,19 @@ def main() -> None:
     )
     sink = JsonSink(args.record)
     ring = RingBufferLogger()
+    
+    # Initialize scroll dispatcher if enabled
+    scroll_dispatcher = None
+    if config.scroll.enabled:
+        scroll_config = ScrollConfig(
+            pixels_per_degree=config.scroll.pixels_per_degree,
+            max_velocity=config.scroll.max_velocity,
+            acceleration_curve=config.scroll.acceleration_curve,
+            respect_system_preference=config.scroll.respect_system_preference,
+            show_hud=config.scroll.show_hud,
+            hud_fade_duration_ms=config.scroll.hud_fade_duration_ms,
+        )
+        scroll_dispatcher = ScrollDispatcher(scroll_config)
 
     # FPS tracking
     fps = 0.0
@@ -121,6 +135,10 @@ def main() -> None:
                         ring.append(circular_result.event)
                         last_event = circular_result.event
                         event_display_time = time.time()
+                        
+                        # Dispatch to scroll action if enabled
+                        if scroll_dispatcher:
+                            scroll_dispatcher.dispatch(circular_result.event)
                 
                 # Draw info with detection
                 if display_frame is not None:

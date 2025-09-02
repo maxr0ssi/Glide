@@ -13,6 +13,9 @@ glide/
 ├── perception/    # Hand detection via MediaPipe
 ├── features/      # Feature extraction (alignment, poses)
 ├── gestures/      # Touch and gesture detection
+├── runtime/       # Platform-specific action implementations
+│   ├── actions/   # Scroll actions and dispatching
+│   └── ui/        # Runtime UI components (HUD)
 ├── io/            # Configuration and event output
 └── ui/            # Visual overlay and display
 ```
@@ -40,11 +43,17 @@ glide/
   - Speed and direction consistency checks
   - Configurable angle thresholds
 
-### 4. **Application Layer** (`app/`)
+### 4. **Runtime Layer** (`runtime/`)
+- **ScrollDispatcher**: Routes circular gestures to platform-specific actions
+- **QuartzScrollAction**: macOS implementation using Quartz Event Services
+- **ScrollHUD**: Visual feedback overlay for scroll actions
+
+### 5. **Application Layer** (`app/`)
 - **Main**: Primary application entry point and processing loop
 - Orchestrates perception, feature extraction, and gesture detection
+- Integrates runtime actions for platform functionality
 
-### 5. **Configuration & I/O** (`io/`)
+### 6. **Configuration & I/O** (`io/`)
 - **defaults.yaml**: YAML-based configuration with sensible defaults
 - **event_output**: JSON event streaming to stdout
 - **replay**: Record and replay sessions for testing
@@ -90,7 +99,14 @@ Camera → Frame → HandDetector → Landmarks → HandAligner → Features
                                                     ↓
                                             Circular Detector
                                                     ↓
-                                            Event Output → JSON
+                                            CircularEvent
+                                                    ↓
+                                    ┌───────────────┴───────────────┐
+                                    │                               │
+                              Event Output → JSON         ScrollDispatcher
+                                                                │
+                                                        Platform Action
+                                                        (e.g., scroll)
 ```
 
 ## Performance Characteristics
@@ -115,6 +131,12 @@ touchproof:
 circular:
   min_angle_deg: 90.0
   min_speed: 1.5
+
+# Scrolling
+scroll:
+  enabled: true
+  pixels_per_degree: 2.22
+  respect_system_preference: true
 ```
 
 Pydantic models in `core/config_models.py` provide validation.
@@ -123,8 +145,9 @@ Pydantic models in `core/config_models.py` provide validation.
 
 The architecture supports:
 - Additional gesture types (e.g., pinch, swipe)
+- Cross-platform action implementations (Windows, Linux)
 - Alternative hand detection backends
 - Multiple camera sources
 - Network streaming of events
-- Improved TouchProof algorithms (see TOUCHPROOF_IMPROVEMENTS.md)
+- Improved TouchProof algorithms
 - Multi-hand tracking

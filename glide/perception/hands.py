@@ -42,7 +42,8 @@ class HandLandmarker:
             default_path = os.path.join(root, "models", "hand_landmarker.task")
             model_path = default_path if os.path.exists(default_path) else None
         if model_path is None:
-            print("[Glide] No hand_landmarker.task model found. Provide --model to enable detection.")
+            import sys
+            sys.stderr.write("Warning: No hand tracking model found. Use --model to specify model path.\n")
         base_options = mp_tasks.BaseOptions(model_asset_path=model_path) if model_path else mp_tasks.BaseOptions()
         options = vision.HandLandmarkerOptions(
             base_options=base_options,
@@ -59,7 +60,8 @@ class HandLandmarker:
     def _init_solutions(self) -> None:
         self._solutions = None
         if not _HAVE_SOLUTIONS:
-            print("[Glide] MediaPipe Tasks unavailable and Solutions hands not available. Hand detection disabled.")
+            import sys
+            sys.stderr.write("Error: MediaPipe not available. Hand detection disabled.\n")
             return
         try:
             self._solutions = mp_hands.Hands(
@@ -69,10 +71,11 @@ class HandLandmarker:
                 min_tracking_confidence=self.min_conf,
                 model_complexity=0,
             )
-            print("[Glide] Using MediaPipe Solutions Hands fallback.")
+            # Using MediaPipe Solutions Hands as fallback
         except Exception:
             self._solutions = None
-            print("[Glide] Failed to initialize Solutions Hands; hand detection disabled.")
+            import sys
+            sys.stderr.write("Error: Failed to initialize hand tracking. Detection disabled.\n")
 
     def detect(self, image_bgr) -> Optional[HandDet]:
         # Tasks path
