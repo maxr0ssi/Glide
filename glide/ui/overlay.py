@@ -4,9 +4,8 @@ import cv2
 import numpy as np
 import time
 from typing import Optional
-from glide.core.types import HandDet, PoseFlags, GateState
+from glide.core.types import HandDet, PoseFlags
 from glide.gestures.touchproof import TouchProofSignals
-from glide.gestures.circular import CircularEvent
 from glide.ui.utils import get_pixel_distance
 
 
@@ -14,8 +13,6 @@ def draw_info(
     image: np.ndarray, 
     det: Optional[HandDet], 
     poses: Optional[PoseFlags], 
-    event: Optional[CircularEvent], 
-    gate_status=None, 
     fps: float = 0.0, 
     touch_threshold: float = 20.0, 
     touch_signals: Optional[TouchProofSignals] = None
@@ -186,9 +183,3 @@ def draw_info(
     else:
         cv2.putText(image, "Hand: Not detected", (10, height - 70),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-    
-    # Event notification
-    if event:
-        text = f"CIRCULAR {event.direction.value} ({event.total_angle_deg:.0f}°)"
-        cv2.putText(image, text, (width // 2 - 100, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 3)

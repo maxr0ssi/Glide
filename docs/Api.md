@@ -30,26 +30,31 @@ signals = detector.update(landmarks, image, width, height)
 - `signals.proximity_score`: Distance-based score
 - `signals.angle_score`: Finger angle convergence score
 
-#### `CircularDetector`
+#### `VelocityTracker`
 ```python
-from glide.gestures.circular import CircularDetector, CircularEvent
+from glide.gestures.velocity_tracker import VelocityTracker
 
-detector = CircularDetector(
-    min_angle_deg=90.0,
-    max_angle_deg=720.0,
-    min_speed=1.5
+tracker = VelocityTracker(
+    window_ms=100,     # Time window for velocity calculation
+    min_samples=3      # Minimum samples for valid velocity
 )
 
-result = detector.update(trail, finger_length, is_touching, timestamp_ms)
+velocity = tracker.update(
+    index_tip=(x, y),
+    middle_tip=(x, y),
+    is_touching=True,
+    timestamp_ms=now_ms
+)
 ```
 
-**Returns**: `CircularDetection` with optional `CircularEvent`
+**Returns**: `Vec2D` with velocity in pixels/second or None
 
 ### Scrolling Integration
 
-#### `ScrollDispatcher`
+#### `VelocityScrollDispatcher`
 ```python
-from glide.runtime.actions.scroll import ScrollDispatcher, ScrollConfig
+from glide.runtime.actions.velocity_dispatcher import VelocityScrollDispatcher
+from glide.runtime.actions.scroll import ScrollConfig
 
 config = ScrollConfig(
     pixels_per_degree=2.22,
@@ -57,21 +62,19 @@ config = ScrollConfig(
     respect_system_preference=True
 )
 
-dispatcher = ScrollDispatcher(config)
-success = dispatcher.dispatch(circular_event)
+dispatcher = VelocityScrollDispatcher(config)
+dispatcher.dispatch(velocity, state, is_active)
 ```
 
 ## Data Types
 
-### `CircularEvent`
+### `Vec2D`
 ```python
 @dataclass
-class CircularEvent:
-    ts_ms: int                    # Timestamp in milliseconds
-    direction: CircularDirection  # CLOCKWISE or COUNTER_CLOCKWISE
-    total_angle_deg: float       # Total rotation angle
-    strength: float              # Gesture confidence (0.0-1.0)
-    duration_ms: int             # Gesture duration
+class Vec2D:
+    x: float                     # X velocity in pixels/second
+    y: float                     # Y velocity in pixels/second
+    magnitude: float             # Speed in pixels/second
 ```
 
 ### `TouchProofSignals`
@@ -109,26 +112,30 @@ config = AppConfig.from_yaml("glide/io/defaults.yaml")
 
 # Access sub-configurations
 config.touchproof    # TouchProof settings
-config.circular      # Circular gesture settings
 config.scroll        # Scrolling settings
+config.kinematics    # Motion tracking settings
 ```
 
 ## Extension Points
 
 ### Custom Scroll Actions
 
-Implement the `ScrollAction` protocol:
+Implement continuous scrolling:
 
 ```python
-from glide.runtime.actions.scroll import ScrollAction
+from glide.runtime.actions.continuous_scroll import ContinuousScrollAction
 
-class MyCustomScrollAction(ScrollAction):
-    def execute(self, event: CircularEvent) -> None:
-        # Your implementation
+class MyCustomScrollAction(ContinuousScrollAction):
+    def begin_gesture(self, velocity: Vec2D) -> bool:
+        # Start scrolling
         pass
     
-    def cancel(self) -> None:
-        # Cancel ongoing scrolls
+    def update_gesture(self, velocity: Vec2D) -> bool:
+        # Update scroll velocity
+        pass
+        
+    def end_gesture(self) -> bool:
+        # End scrolling, hand off to momentum
         pass
 ```
 

@@ -33,12 +33,6 @@ class KinematicsConfig(BaseModel):
 
 
 
-class TwoFingerConfig(BaseModel):
-    """Configuration for two-finger detection."""
-    min_vel_corr: float = Field(0.7, ge=0.0, le=1.0, description="Minimum velocity correlation")
-    max_sep_cv: float = Field(0.2, ge=0.0, le=1.0, description="Maximum separation coefficient of variation")
-
-
 class ScrollConfig(BaseModel):
     """Configuration for scroll behavior."""
     enabled: bool = Field(True, description="Enable scroll functionality")
@@ -49,17 +43,6 @@ class ScrollConfig(BaseModel):
     show_hud: bool = Field(True, description="Show HUD overlay")
     hud_fade_duration_ms: int = Field(500, ge=100, le=2000, description="HUD fade duration (ms)")
     hud_position: str = Field("bottom-right", description="HUD position on screen")
-
-
-class CircularConfig(BaseModel):
-    """Configuration for circular gesture detection."""
-    min_angle_deg: float = Field(90.0, ge=45.0, le=180.0, description="Minimum angle to trigger (degrees)")
-    max_angle_deg: float = Field(720.0, ge=180.0, le=1080.0, description="Maximum angle before stopping (degrees)")
-    min_speed: float = Field(1.5, ge=0.5, le=5.0, description="Minimum speed to start detection")
-    exit_speed_factor: float = Field(0.5, ge=0.1, le=0.9, description="Factor of min_speed to stop detection")
-    max_duration_ms: int = Field(1000, ge=100, le=3000, description="Maximum gesture duration (ms)")
-    cooldown_ms: int = Field(500, ge=100, le=2000, description="Cooldown between gestures (ms)")
-    angle_tolerance_deg: float = Field(45.0, ge=15.0, le=90.0, description="Tolerance for direction consistency")
 
 
 class TouchProofConfig(BaseModel):
@@ -94,11 +77,6 @@ class TouchProofConfig(BaseModel):
     ema_alpha: float = Field(0.3, ge=0.0, le=1.0, description="EMA smoothing factor")
     smooth_proximity: bool = Field(True, description="Apply EMA to proximity signal")
     
-    # Legacy fusion weights
-    weight_proximity: float = Field(0.60, ge=0.0, le=1.0, description="Base proximity weight")
-    weight_angle: float = Field(0.20, ge=0.0, le=1.0, description="Base angle weight")
-    weight_correlation: float = Field(0.0, ge=0.0, le=1.0, description="Correlation weight (disabled)")
-    weight_visibility: float = Field(0.0, ge=0.0, le=1.0, description="Visibility weight (disabled)")
     
     # Distance interaction parameters
     distance_near_px: float = Field(200.0, ge=50.0, le=500.0, description="Finger length when close")
@@ -142,9 +120,7 @@ class AppConfig(BaseModel):
     # Detection configs
     gates: GatesConfig = Field(default_factory=GatesConfig)
     kinematics: KinematicsConfig = Field(default_factory=KinematicsConfig)
-    two_finger: TwoFingerConfig = Field(default_factory=TwoFingerConfig)
     touchproof: TouchProofConfig = Field(default_factory=TouchProofConfig)
-    circular: CircularConfig = Field(default_factory=CircularConfig)
     scroll: ScrollConfig = Field(default_factory=ScrollConfig)
     
     @classmethod

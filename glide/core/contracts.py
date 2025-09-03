@@ -54,15 +54,3 @@ class GestureDetector(ABC):
         pass
 
 
-class EventSink(ABC):
-    """Outputs detected events."""
-    
-    @abstractmethod
-    def emit(self, event: Any) -> None:
-        """Emit an event."""
-        pass
-    
-    @abstractmethod
-    def close(self) -> None:
-        """Close sink and flush any buffers."""
-        pass

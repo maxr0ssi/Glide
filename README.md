@@ -1,14 +1,14 @@
 # Glide - Touchless Gesture Control
 
-I like eating while reading or watching videos. My laptop is less keen. Keyboards and burger bun grease are not a power couple. So I am building Glide, a small, fun and stupid solution to use my screen about without touching it.
+I like eating while reading or watching videos. My laptop is less keen. Keyboards and burger bun grease are not a power couple. So I am building Glide, a small, fun and stupid solution to use my screen without touching it.
 (plus it looks rather cool in lectures flicking through slides)
-Conenct your index and middle finger to activate. Then trace a tidy little circle to scroll. Keep the crumbs on your plate and the smears off your kit.
+Connect your index and middle finger to activate. Then move them up or down to scroll. Keep the crumbs on your plate and the smears off your kit.
 
 ## Features
 
 - **TouchProof Technology** - Multi-signal fusion for detecting when fingertips touch
 - **MediaPipe Hand Tracking** - Accurate 21-point hand landmark detection  
-- **Circular Gesture Recognition** - Clockwise and counter-clockwise gesture detection
+- **Velocity-Based Scrolling** - Natural movement-driven scrolling
 - **Real-time Visual Feedback** - Live preview with touch status and signal visualization
 - **Modular Architecture** - Clean separation of detection, visualization, and output
 
@@ -61,10 +61,11 @@ python -m glide.app.main --model models/hand_landmarker.task
 ### Controls
 
 - **Touch Detection**: Connect your index and middle fingertips to activate
-- **Scrolling**: While touching, make circular gestures:
-  - **Clockwise** → Scroll down
-  - **Counter-clockwise** → Scroll up
-  - Larger circles = faster scrolling
+- **Smooth Scrolling**: Natural velocity-based scrolling:
+  - **Move fingers up/down** → Scroll in that direction
+  - **Move faster** → Scroll faster
+  - **Release** → macOS momentum takes over
+  - **High-five gesture** → Instant stop
 - **Exit**: Press 'q' or ESC to quit
 
 Preview window shows:
@@ -84,8 +85,10 @@ The system uses three complementary signals to detect fingertip contact:
 3. **MFC (Micro-Flow Cohesion)** - Optical flow coherence between fingertips
 
 ### Gesture Recognition
-- **Touch Detection** - Pinch index and middle fingertips together to activate. PREREQUISTE for gestures to reference
-- **Circular Gestures** - Make clockwise or counter-clockwise circular motions
+- **Touch Detection** - Pinch index and middle fingertips together to activate
+- **Velocity-Based Scrolling** - Direct finger movement controls scroll speed
+- **Native Momentum** - macOS handles deceleration naturally
+- **Gesture Controls** - High-five to stop instantly
 
 ## Project Structure
 

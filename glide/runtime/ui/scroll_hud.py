@@ -9,7 +9,6 @@ from tkinter import Canvas
 import math
 import threading
 
-from glide.gestures.circular import CircularDirection
 
 
 @dataclass
@@ -48,13 +47,13 @@ class ScrollHUD:
         except Exception as e:
             pass  # Failed to create HUD window
     
-    def show_scroll(self, direction: CircularDirection, velocity: float) -> None:
+    def show_scroll(self, velocity_y: float, normalized_speed: float) -> None:
         """
         Display scroll indicator.
         
         Args:
-            direction: Scroll direction (CW/CCW)
-            velocity: Normalized velocity (0.0-1.0)
+            velocity_y: Y-axis velocity (positive = down, negative = up)
+            normalized_speed: Normalized speed (0.0-1.0)
         """
         if self._window is None:
             return
@@ -62,7 +61,7 @@ class ScrollHUD:
         with self._lock:
             try:
                 # Update display
-                self._update_display(direction, velocity)
+                self._update_display(velocity_y, normalized_speed)
                 
                 # Start fade in
                 self._target_alpha = self.metrics.opacity
@@ -150,7 +149,7 @@ class ScrollHUD:
         
         self._window.geometry(f"{self.metrics.window_width}x{self.metrics.window_height}+{x}+{y}")
     
-    def _update_display(self, direction: CircularDirection, velocity: float) -> None:
+    def _update_display(self, velocity_y: float, normalized_speed: float) -> None:
         """Update HUD content."""
         if not self._canvas:
             return
@@ -161,48 +160,42 @@ class ScrollHUD:
         # Calculate arrow parameters
         center_x = self.metrics.window_width // 2
         center_y = self.metrics.window_height // 2
-        radius = min(center_x, center_y) - 10
         
-        # Draw circular arrow
-        if direction == CircularDirection.CLOCKWISE:
-            # Clockwise arrow (top to right)
-            start_angle = 270
-            extent = 90
-            arrow_end = 0  # Right side
-        else:
-            # Counter-clockwise arrow (top to left)
-            start_angle = 270
-            extent = -90
-            arrow_end = 180  # Left side
+        # Draw vertical arrow based on velocity
+        arrow_height = int(30 * normalized_speed)  # Scale with speed
+        arrow_width = 20
         
-        # Draw arc
-        self._canvas.create_arc(
-            center_x - radius, center_y - radius,
-            center_x + radius, center_y + radius,
-            start=start_angle, extent=extent,
-            style=tk.ARC, width=3,
-            outline='white'
-        )
+        if velocity_y > 0:  # Scrolling down
+            # Draw downward arrow
+            points = [
+                center_x, center_y + arrow_height,  # Bottom point
+                center_x - arrow_width//2, center_y,  # Top left
+                center_x + arrow_width//2, center_y   # Top right
+            ]
+        else:  # Scrolling up
+            # Draw upward arrow
+            points = [
+                center_x, center_y - arrow_height,  # Top point
+                center_x - arrow_width//2, center_y,  # Bottom left
+                center_x + arrow_width//2, center_y   # Bottom right
+            ]
         
-        # Draw arrowhead
-        arrow_angle = math.radians(arrow_end)
-        arrow_x = center_x + radius * math.cos(arrow_angle)
-        arrow_y = center_y + radius * math.sin(arrow_angle)
-        
-        # Arrowhead points
-        head_size = 8
-        angle1 = arrow_angle + math.radians(150)
-        angle2 = arrow_angle - math.radians(150)
-        
-        points = [
-            arrow_x, arrow_y,
-            arrow_x + head_size * math.cos(angle1),
-            arrow_y + head_size * math.sin(angle1),
-            arrow_x + head_size * math.cos(angle2),
-            arrow_y + head_size * math.sin(angle2),
-        ]
-        
+        # Draw arrow
         self._canvas.create_polygon(points, fill='white', outline='white')
+        
+        # Draw speed indicator bars
+        bar_width = 4
+        bar_spacing = 8
+        num_bars = int(normalized_speed * 3) + 1  # 1-4 bars
+        
+        for i in range(num_bars):
+            bar_x = center_x - (num_bars - 1) * bar_spacing // 2 + i * bar_spacing
+            bar_height = 10 + i * 3  # Progressive heights
+            self._canvas.create_rectangle(
+                bar_x - bar_width//2, center_y + 20,
+                bar_x + bar_width//2, center_y + 20 + bar_height,
+                fill='white', outline='white'
+            )
         
         # Show window if hidden
         self._window.deiconify()

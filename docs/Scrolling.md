@@ -1,14 +1,17 @@
 # Scrolling with Glide
 
-Glide enables hands-free scrolling on macOS using circular gestures. Perfect for when your hands are messy from food!
+Glide enables hands-free scrolling on macOS using natural finger movements. Perfect for when your hands are messy from food!
 
 ## How It Works
 
 1. **Activate**: Touch your index and middle fingertips together
-2. **Scroll**: While touching, make circular motions:
-   - **Clockwise** circles → Scroll down
-   - **Counter-clockwise** circles → Scroll up
-3. **Speed Control**: Larger circles = faster scrolling
+2. **Scroll**: While touching, move your fingers up or down:
+   - **Move down** → Scroll down
+   - **Move up** → Scroll up
+   - **Move sideways** → Horizontal scroll (if supported by app)
+3. **Speed Control**: Faster movement = faster scrolling
+4. **Momentum**: Release fingers and scrolling continues with natural deceleration
+5. **Stop**: High-five gesture (open palm) for instant stop
 
 ## Setup
 
@@ -35,16 +38,16 @@ Edit `glide/io/defaults.yaml` to customize scrolling behavior:
 ```yaml
 scroll:
   enabled: true              # Enable/disable scrolling
-  pixels_per_degree: 2.22    # Scroll speed (higher = faster)
-  max_velocity: 100.0        # Maximum scroll speed
+  pixels_per_degree: 5.0     # Scroll sensitivity (higher = more responsive)
+  max_velocity: 100.0        # Maximum scroll speed in pixels
   respect_system_preference: true  # Honor natural scrolling
-  show_hud: true            # Show visual feedback
+  show_hud: true            # Show visual feedback (currently disabled)
 ```
 
 ### Key Settings
 
-- **pixels_per_degree**: Controls scroll sensitivity. Default maps 180° rotation to 400 pixels
-- **max_velocity**: Prevents extremely fast scrolling from large gestures
+- **pixels_per_degree**: Legacy setting (kept for compatibility). The new velocity system uses direct pixel mapping
+- **max_velocity**: Maximum scroll speed in pixels per event
 - **respect_system_preference**: Follows your macOS natural scrolling setting
 
 ## Visual Feedback
@@ -71,10 +74,12 @@ When scrolling is triggered, a small HUD appears showing:
 
 ## Technical Details
 
-- Uses PyObjC to interface with macOS Quartz Event Services
-- Generates native `CGScrollWheelEvent` events
-- Respects system natural scrolling preference
-- Thread-safe HUD implementation using tkinter
+- **Velocity-Based Tracking**: Measures fingertip velocity in pixels/second
+- **Native Scroll Phases**: Uses proper macOS scroll phases (began → changed → ended)
+- **CGEventCreateScrollWheelEvent**: Generates native scroll events with sub-pixel precision
+- **Momentum Handoff**: macOS handles momentum scrolling automatically
+- **Frame-Rate Independent**: Velocity calculation uses time windows, not frame counts
+- **PyObjC Integration**: Direct interface with Quartz Event Services
 
 ## Supported Applications
 
@@ -86,7 +91,8 @@ Works with any macOS application that accepts standard scroll events:
 
 ## Future Improvements
 
-- Momentum scrolling
-- Horizontal scrolling support
+- Visual HUD feedback (currently disabled)
 - Per-application sensitivity settings
-- Gesture customization
+- Custom gesture mapping
+- Two-finger rotation for zoom
+- Pinch gestures for zoom control
