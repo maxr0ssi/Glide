@@ -48,9 +48,9 @@ class ScrollConfig(BaseModel):
 class TouchProofConfig(BaseModel):
     """Configuration for TouchProof multi-signal detection."""
     # Proximity thresholds (normalized)
-    proximity_enter: float = Field(0.25, ge=0.0, le=1.0, description="Distance to consider close")
-    proximity_exit: float = Field(0.40, ge=0.0, le=1.0, description="Distance to consider far")
-    proximity_hard_cap: float = Field(0.50, ge=0.0, le=1.0, description="Auto-fail distance threshold")
+    proximity_enter: float = Field(0.15, ge=0.0, le=1.0, description="Distance to consider close")
+    proximity_exit: float = Field(0.25, ge=0.0, le=1.0, description="Distance to consider far")
+    proximity_hard_cap: float = Field(0.70, ge=0.0, le=1.0, description="Auto-fail distance threshold")
     
     # Angle thresholds (degrees)
     angle_enter_deg: float = Field(20.0, ge=0.0, le=90.0, description="Max angle for parallel fingers")
@@ -76,6 +76,11 @@ class TouchProofConfig(BaseModel):
     # Signal smoothing
     ema_alpha: float = Field(0.3, ge=0.0, le=1.0, description="EMA smoothing factor")
     smooth_proximity: bool = Field(True, description="Apply EMA to proximity signal")
+    
+    # Proximity scoring mode
+    proximity_mode: str = Field("adaptive", description="Proximity scoring mode: fixed, adaptive, logarithmic")
+    baseline_learning_rate: float = Field(0.02, ge=0.001, le=0.1, description="Learning rate for baseline distances")
+    relative_touch_threshold: float = Field(0.85, ge=0.5, le=1.0, description="Relative distance for touch detection")
     
     
     # Distance interaction parameters

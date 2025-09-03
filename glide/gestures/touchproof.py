@@ -88,11 +88,11 @@ class MicroFlowTracker:
         corr_x = np.corrcoef(flows_a[:, 0], flows_b[:, 0])[0, 1]
         corr_y = np.corrcoef(flows_a[:, 1], flows_b[:, 1])[0, 1]
         
-        # Handle NaN from zero variance
+        # Handle NaN from zero variance conservatively (avoid false positives)
         if np.isnan(corr_x):
-            corr_x = 1.0 if np.var(flows_a[:, 0]) < 1e-6 else 0.0
+            corr_x = 0.0
         if np.isnan(corr_y):
-            corr_y = 1.0 if np.var(flows_a[:, 1]) < 1e-6 else 0.0
+            corr_y = 0.0
         
         # Average correlation
         avg_corr = (corr_x + corr_y) / 2.0
@@ -102,8 +102,8 @@ class MicroFlowTracker:
         mag_b = np.linalg.norm(flows_b, axis=1).mean()
         
         if mag_a < 1e-6 and mag_b < 1e-6:
-            # Both stationary
-            mag_ratio_score = 1.0
+            # Both stationary: return neutral/low confidence to avoid inflating fused score
+            return 0.0
         elif mag_a < 1e-6 or mag_b < 1e-6:
             # One stationary
             mag_ratio_score = 0.0
@@ -139,6 +139,12 @@ class TouchProofDetector:
         
         # EMA smoothing for volatile signals
         self._proximity_ema: Optional[float] = None
+        self._angle_ema: Optional[float] = None  # Added angle smoothing for laptop cameras
+        
+        # Baseline tracking for adaptive proximity
+        self._baseline_close: Optional[float] = None  # Typical distance when close
+        self._baseline_far: Optional[float] = None    # Typical distance when far
+        self._baseline_alpha = config.baseline_learning_rate  # From config
         
         # Micro-flow tracker
         self.flow_tracker = MicroFlowTracker(window_frames=5)
@@ -177,7 +183,10 @@ class TouchProofDetector:
         middle_tip = landmarks[12]
         
         # 1. PROXIMITY SIGNAL
-        proximity_norm = self.aligner.get_normalized_distance(landmarks)
+        if self.config.proximity_mode == "logarithmic":
+            proximity_norm = self.aligner.get_normalized_distance_log(landmarks)
+        else:
+            proximity_norm = self.aligner.get_normalized_distance(landmarks)
         
         # HARD CAP: If fingers are too far apart, no need to compute anything else
         if proximity_norm > self.config.proximity_hard_cap:
@@ -221,7 +230,14 @@ class TouchProofDetector:
                 is_touching=False
             )
         
-        angle_score = self._score_angle(angle_deg)
+        # Apply angle smoothing for laptop camera stability
+        angle_alpha = 0.2  # Faster response than proximity (0.3)
+        if self._angle_ema is None:
+            self._angle_ema = angle_deg
+        else:
+            self._angle_ema = angle_alpha * angle_deg + (1 - angle_alpha) * self._angle_ema
+        
+        angle_score = self._score_angle(self._angle_ema)
         
         # 3. MOTION CORRELATION SIGNAL
         # Update position buffers
@@ -241,6 +257,9 @@ class TouchProofDetector:
         # 6. Get distance factor for adaptive fusion
         distance_factor = self.aligner.get_hand_distance_factor()
         
+        # 6b. Update baseline distances for adaptive proximity
+        self._update_baseline(proximity_norm, distance_factor)
+        
         # 7. Compute initial fused score for conditional logic
         initial_fused = (
             0.7 * proximity_score +
@@ -248,8 +267,10 @@ class TouchProofDetector:
         )
         
         
-        # 8. MFC (Micro-Flow Cohesion) - for state transitions
-        if self.state == GateState.READY or (0.45 <= initial_fused <= 0.65):
+        # 8. MFC (Micro-Flow Cohesion) - expanded band for laptop cameras
+        if (self.state == GateState.READY or 
+            (0.40 <= initial_fused <= 0.70) or  # Expanded uncertainty band
+            distance_factor < 0.3):  # Always compute when very close
             # Convert to grayscale for optical flow
             gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
             mfc_score = self.flow_tracker.update(gray, index_px, middle_px)
@@ -423,31 +444,31 @@ class TouchProofDetector:
         """Get fusion weights based on hand distance."""
         if distance_factor > 0.7:  # Far away
             return {
-                'proximity': 0.55,
-                'angle': 0.25,
-                'mfc': 0.15,
+                'proximity': 0.45,
+                'angle': 0.20,
+                'mfc': 0.30,
                 'occlusion': 0.05
             }
-        elif distance_factor < 0.3:  # Very close
+        elif distance_factor < 0.3:  # Very close - reduced angle weight for laptop cameras
             return {
-                'proximity': 0.50,
-                'angle': 0.35,
-                'mfc': 0.10,
+                'proximity': 0.40,
+                'angle': 0.30,
+                'mfc': 0.25,
                 'occlusion': 0.05
             }
         else:  # Interpolate
             # Linear interpolation between near and far weights
             t = (distance_factor - 0.3) / 0.4  # Map [0.3, 0.7] to [0, 1]
             near_weights = {
-                'proximity': 0.50,
-                'angle': 0.35,
-                'mfc': 0.10,
+                'proximity': 0.40,
+                'angle': 0.30,
+                'mfc': 0.25,
                 'occlusion': 0.05
             }
             far_weights = {
-                'proximity': 0.55,
-                'angle': 0.25,
-                'mfc': 0.15,
+                'proximity': 0.45,
+                'angle': 0.20,
+                'mfc': 0.30,
                 'occlusion': 0.05
             }
             return {
@@ -466,9 +487,24 @@ class TouchProofDetector:
         return angle_deg
     
     def _score_proximity_adjusted(self, distance_norm: float, distance_factor: float) -> float:
-        """Score proximity with distance-aware thresholds."""
-        # Adjust thresholds: stricter when far
-        k_d = 0.3  # Distance interaction coefficient
+        """Score proximity with distance-aware thresholds and relative baseline."""
+        # Mode-based scoring
+        if self.config.proximity_mode == "adaptive":
+            # Try relative scoring if baselines are available
+            baseline = self._get_baseline_distance(distance_factor)
+            if baseline is not None:
+                # Relative proximity: how much closer than usual?
+                relative_proximity = baseline / (distance_norm + 0.001)  # Avoid division by zero
+                
+                # Sigmoid scoring centered at threshold
+                center = self.config.relative_touch_threshold
+                steepness = 6.0
+                score = 1.0 / (1.0 + np.exp(-steepness * (relative_proximity - center)))
+                return float(score)
+        
+        # Fallback to threshold-based scoring with distance adjustment
+        k_d = getattr(self.config, 'k_d', 0.3)  # Use config value
+        # Stricter when far (distance_factor=1), looser when close (0)
         enter_adjusted = self.config.proximity_enter * (1 + k_d * distance_factor)
         exit_adjusted = self.config.proximity_exit * (1 + k_d * distance_factor)
         
@@ -484,7 +520,7 @@ class TouchProofDetector:
     def _score_angle_adjusted(self, angle_deg: float, distance_factor: float) -> float:
         """Score angle with distance-aware thresholds."""
         # Adjust thresholds: stricter (smaller) when close
-        k_theta = 4.0  # Angle interaction coefficient
+        k_theta = getattr(self.config, 'k_theta', 4.0)  # Angle interaction coefficient
         enter_adjusted = self.config.angle_enter_deg - k_theta * (1 - distance_factor)
         exit_adjusted = self.config.angle_exit_deg - k_theta * (1 - distance_factor)
         
@@ -509,3 +545,34 @@ class TouchProofDetector:
             fused_score=0.0,
             is_touching=False
         )
+    
+    def _update_baseline(self, distance_norm: float, distance_factor: float) -> None:
+        """Update baseline distances for different hand distances."""
+        # Only update when not touching (to learn normal separation)
+        if self.state == GateState.UNARMED:
+            if distance_factor < 0.3:  # Close
+                if self._baseline_close is None:
+                    self._baseline_close = distance_norm
+                else:
+                    self._baseline_close = (self._baseline_alpha * distance_norm + 
+                                           (1 - self._baseline_alpha) * self._baseline_close)
+            elif distance_factor > 0.7:  # Far
+                if self._baseline_far is None:
+                    self._baseline_far = distance_norm
+                else:
+                    self._baseline_far = (self._baseline_alpha * distance_norm + 
+                                         (1 - self._baseline_alpha) * self._baseline_far)
+    
+    def _get_baseline_distance(self, distance_factor: float) -> Optional[float]:
+        """Get expected baseline distance for current hand distance."""
+        if self._baseline_close is None or self._baseline_far is None:
+            return None
+            
+        if distance_factor < 0.3:
+            return self._baseline_close
+        elif distance_factor > 0.7:
+            return self._baseline_far
+        else:
+            # Linear interpolation
+            t = (distance_factor - 0.3) / 0.4
+            return self._baseline_close * (1 - t) + self._baseline_far * t

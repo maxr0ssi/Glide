@@ -82,7 +82,7 @@ def draw_info(
                 
                 # Add asterisk for conditionally computed signals
                 value_text = f"{value:.2f}"
-                if label in ["SVT:", "MFC:"] and 0.45 <= touch_signals.fused_score <= 0.65:
+                if label in ["SVT:", "MFC:"] and 0.40 <= touch_signals.fused_score <= 0.70:
                     value_text += "*"  # Indicate active computation
                 
                 cv2.putText(image, value_text, (table_x + 130, row_y),
