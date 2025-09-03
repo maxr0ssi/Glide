@@ -2,7 +2,7 @@
 
 ## Overview
 
-Glide is a touchless gesture control system that lets you interact with your computer without touching it - perfect for when your hands are messy from food. It uses computer vision to detect when your fingertips touch and tracks circular gestures for scrolling.
+Glide is a touchless gesture control system that lets you interact with your computer without touching it - perfect for when your hands are messy from food. It uses computer vision to detect when your fingertips touch and tracks their velocity for natural scrolling.
 
 ## Package Structure
 
@@ -38,14 +38,14 @@ glide/
   - Angle convergence analysis
   - Micro-Flow Cohesion (MFC) for motion coherence
   - Distance-aware adaptive weighting
-- **Circular**: Detects clockwise and counter-clockwise circular gestures
-  - Cumulative angle tracking
-  - Speed and direction consistency checks
-  - Configurable angle thresholds
+- **VelocityTracker**: Tracks fingertip velocity in pixels/second
+  - Frame-rate independent velocity calculation
+  - Time-windowed position sampling
+  - Smooth velocity transitions
 
 ### 4. **Runtime Layer** (`runtime/`)
-- **ScrollDispatcher**: Routes circular gestures to platform-specific actions
-- **QuartzScrollAction**: macOS implementation using Quartz Event Services
+- **VelocityScrollDispatcher**: Routes velocity data to platform-specific actions
+- **ContinuousScrollAction**: macOS implementation using scroll phases
 - **ScrollHUD**: Visual feedback overlay for scroll actions
 
 ### 5. **Application Layer** (`app/`)
@@ -97,13 +97,13 @@ Camera → Frame → HandDetector → Landmarks → HandAligner → Features
                                                     ↓
                                             TouchProof Detector
                                                     ↓
-                                            Circular Detector
+                                            Velocity Tracker
                                                     ↓
-                                            CircularEvent
+                                            Velocity-based Scrolling
                                                     ↓
                                     ┌───────────────┴───────────────┐
                                     │                               │
-                              Event Output → JSON         ScrollDispatcher
+                              Event Output → JSON    VelocityScrollDispatcher
                                                                 │
                                                         Platform Action
                                                         (e.g., scroll)
@@ -127,10 +127,10 @@ touchproof:
   angle_enter_deg: 20.0
   fused_enter_threshold: 0.80
   
-# Circular gestures  
-circular:
-  min_angle_deg: 90.0
-  min_speed: 1.5
+# Velocity tracking
+velocity:
+  window_ms: 100
+  min_samples: 3
 
 # Scrolling
 scroll:

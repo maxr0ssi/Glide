@@ -209,6 +209,36 @@ class HandAligner:
         
         return distance
     
+    def get_normalized_distance_log(self, landmarks: List[Landmark]) -> float:
+        """
+        Get log-normalized distance between fingertips.
+        More stable across different camera distances.
+        
+        Returns:
+            Log-normalized distance (0.0 = touching, higher = farther)
+        """
+        if not landmarks or len(landmarks) < 21:
+            return float('inf')
+        
+        index_tip = landmarks[8]
+        middle_tip = landmarks[12]
+        
+        # Get pixel distance
+        index_px = self.normalized_to_pixel(index_tip.x, index_tip.y)
+        middle_px = self.normalized_to_pixel(middle_tip.x, middle_tip.y)
+        
+        distance_px = math.hypot(index_px[0] - middle_px[0], 
+                               index_px[1] - middle_px[1])
+        
+        # Reference distance (typical finger width in pixels at medium distance)
+        reference_px = 30.0
+        
+        # Log normalization: log(1 + d) / log(1 + ref)
+        # This compresses large distances and expands small ones
+        distance_log = np.log(1 + distance_px) / np.log(1 + reference_px)
+        
+        return float(distance_log)
+    
     def get_fingertip_angle(self, landmarks: List[Landmark]) -> float:
         """
         Get angle between index and middle fingers from palm center (degrees).

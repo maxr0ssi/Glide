@@ -4,9 +4,8 @@ import cv2
 import numpy as np
 import time
 from typing import Optional
-from glide.core.types import HandDet, PoseFlags, GateState
+from glide.core.types import HandDet, PoseFlags
 from glide.gestures.touchproof import TouchProofSignals
-from glide.gestures.circular import CircularEvent
 from glide.ui.utils import get_pixel_distance
 
 
@@ -14,8 +13,6 @@ def draw_info(
     image: np.ndarray, 
     det: Optional[HandDet], 
     poses: Optional[PoseFlags], 
-    event: Optional[CircularEvent], 
-    gate_status=None, 
     fps: float = 0.0, 
     touch_threshold: float = 20.0, 
     touch_signals: Optional[TouchProofSignals] = None
@@ -85,7 +82,7 @@ def draw_info(
                 
                 # Add asterisk for conditionally computed signals
                 value_text = f"{value:.2f}"
-                if label in ["SVT:", "MFC:"] and 0.45 <= touch_signals.fused_score <= 0.65:
+                if label in ["SVT:", "MFC:"] and 0.40 <= touch_signals.fused_score <= 0.70:
                     value_text += "*"  # Indicate active computation
                 
                 cv2.putText(image, value_text, (table_x + 130, row_y),
@@ -186,9 +183,3 @@ def draw_info(
     else:
         cv2.putText(image, "Hand: Not detected", (10, height - 70),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-    
-    # Event notification
-    if event:
-        text = f"CIRCULAR {event.direction.value} ({event.total_angle_deg:.0f}°)"
-        cv2.putText(image, text, (width // 2 - 100, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 255), 3)

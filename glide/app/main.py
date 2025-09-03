@@ -4,29 +4,28 @@ from __future__ import annotations
 
 import argparse
 import time
-from typing import Optional  # noqa: F401
 import cv2  # type: ignore
 
-from glide.core.types import AppConfig, GateState
+from glide.core.types import AppConfig
 from glide.perception.camera import Camera
 from glide.perception.hands import HandLandmarker
 from glide.features.poses import check_hand_pose
 from glide.features.kinematics import KinematicsTracker
 from glide.gestures.touchproof import TouchProofDetector
-from glide.gestures.circular import CircularDetector
+from glide.gestures.velocity_tracker import VelocityTracker
+from glide.gestures.velocity_controller import VelocityController
 from glide.ui.overlay import draw_info
-from glide.io.event_output import JsonSink, RingBufferLogger
-from glide.runtime.actions.scroll import ScrollDispatcher, ScrollConfig
+from glide.runtime.actions.config import ScrollConfig
+from glide.runtime.actions.velocity_dispatcher import VelocityScrollDispatcher
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Glide - Gesture Detection")
     p.add_argument("--config", type=str, default="glide/io/defaults.yaml")
     p.add_argument("--debug", action="store_true")
-    p.add_argument("--record", type=str, default=None, help="Path to write JSONL events")
-    p.add_argument("--replay", type=str, default=None, help="Path to read replay (NYI)")
     p.add_argument("--model", type=str, default="models/hand_landmarker.task", help="Path to MediaPipe hand_landmarker.task")
     p.add_argument("--headless", action="store_true", help="Run without preview window")
+    p.add_argument("--no-hud", action="store_true", help="Disable scroll HUD overlay")
     return p.parse_args()
 
 
@@ -38,17 +37,10 @@ def main() -> None:
     hands = HandLandmarker(model_path=args.model)
     kinematics = KinematicsTracker(ema_alpha=config.kinematics.ema_alpha, buffer_frames=config.kinematics.buffer_frames)
     touchproof = TouchProofDetector(config.touchproof)
-    circular = CircularDetector(
-        min_angle_deg=config.circular.min_angle_deg,
-        max_angle_deg=config.circular.max_angle_deg,
-        min_speed=config.circular.min_speed,
-        exit_speed_factor=config.circular.exit_speed_factor,
-        max_duration_ms=config.circular.max_duration_ms,
-        cooldown_ms=config.circular.cooldown_ms,
-        angle_tolerance_deg=config.circular.angle_tolerance_deg,
-    )
-    sink = JsonSink(args.record)
-    ring = RingBufferLogger()
+    
+    # Initialize velocity-based scrolling components
+    velocity_tracker = VelocityTracker()
+    velocity_controller = VelocityController()
     
     # Initialize scroll dispatcher if enabled
     scroll_dispatcher = None
@@ -58,10 +50,10 @@ def main() -> None:
             max_velocity=config.scroll.max_velocity,
             acceleration_curve=config.scroll.acceleration_curve,
             respect_system_preference=config.scroll.respect_system_preference,
-            show_hud=config.scroll.show_hud,
+            show_hud=config.scroll.show_hud and not args.no_hud and not args.headless,  # Disable HUD in headless mode
             hud_fade_duration_ms=config.scroll.hud_fade_duration_ms,
         )
-        scroll_dispatcher = ScrollDispatcher(scroll_config)
+        scroll_dispatcher = VelocityScrollDispatcher(scroll_config)
 
     # FPS tracking
     fps = 0.0
@@ -74,7 +66,7 @@ def main() -> None:
     
     try:
         while True:
-            frame_start = time.time()
+            # frame_start = time.time()
             
             frame = camera.read()
             if frame is None:
@@ -85,18 +77,16 @@ def main() -> None:
             
             detection = hands.detect(frame.image)
             
-            # Initialize poses and gate_status to None
+            # Initialize poses to None
             poses = None
-            gate_status = None
-            is_touching = False
+            # is_touching = False
             touch_signals = None
             
             if detection is None or detection.confidence < config.gates.presence_conf:
                 # Draw info even when no hand detected
                 if display_frame is not None:
-                    draw_info(display_frame, None, None, 
-                             last_event if time.time() - event_display_time < 1.0 else None, None, fps, 
-                             config.touch_threshold_pixels, None)
+                    draw_info(display_frame, None, None,
+                              fps, config.touch_threshold_pixels, None)
             else:
                 # ROI/palm-relative alignment and fingertip kinematics
                 kin_state = kinematics.compute(detection.landmarks)
@@ -118,33 +108,58 @@ def main() -> None:
                 main._was_touching = touch_signals.is_touching
                 
                 if kin_state is not None and (poses.open_palm or poses.pointing_index or poses.two_up):
-                    # Detect circular gestures when touching
+                    # Get current time and finger length
                     now_ms = int(time.time() * 1000)
                     avg_finger_len = (kin_state.finger_length_idx + 
                                     (kin_state.finger_length_mid or kin_state.finger_length_idx)) / 2.0
                     
-                    circular_result = circular.update(
-                        kinematics.trail_mean,
-                        avg_finger_len,
-                        touch_signals.is_touching,
-                        now_ms
-                    )
-                    
-                    if circular_result.event is not None:
-                        sink.emit(circular_result.event)
-                        ring.append(circular_result.event)
-                        last_event = circular_result.event
-                        event_display_time = time.time()
+                    # Update smooth scrolling if enabled
+                    scroll_update = None
+                    if config.scroll.enabled and scroll_dispatcher:
+                        # Get fingertip positions (index=8, middle=12 in MediaPipe)
+                        index_tip = detection.landmarks[8]
+                        middle_tip = detection.landmarks[12]
                         
-                        # Dispatch to scroll action if enabled
-                        if scroll_dispatcher:
-                            scroll_dispatcher.dispatch(circular_result.event)
+                        # Update velocity tracker
+                        velocity = velocity_tracker.update(
+                            (index_tip.x, index_tip.y),
+                            (middle_tip.x, middle_tip.y),
+                            touch_signals.is_touching,
+                            now_ms
+                        )
+                        
+                        # Check for single finger (only index extended)
+                        is_single_finger = poses.pointing_index and not poses.two_up
+                        
+                        # Update wheel controller
+                        # High-five: open palm + not touching + not in two-finger or pointing pose
+                        is_high_five = (
+                            poses.open_palm and not touch_signals.is_touching and not (poses.two_up or poses.pointing_index)
+                        )
+                        scroll_update = velocity_controller.update(
+                            velocity,
+                            touch_signals.is_touching,
+                            is_high_five,
+                            now_ms
+                        )
+                        
+                        # Debug logging (disabled for production)
+                        # if velocity:
+                        #     print(f"[DEBUG] vel=({velocity.x:.3f}, {velocity.y:.3f}), mag={velocity.magnitude:.3f}, touching={touch_signals.is_touching}, state={scroll_update.state.value}, active={scroll_update.is_active}")
+                        
+                        # Dispatch continuous scrolling
+                        if scroll_update:
+                            scroll_dispatcher.dispatch(
+                                scroll_update.velocity,
+                                scroll_update.state,
+                                scroll_update.is_active
+                            )
+                    
                 
                 # Draw info with detection
                 if display_frame is not None:
                     draw_info(display_frame, detection, poses,
-                             last_event if time.time() - event_display_time < 1.0 else None, 
-                             gate_status, fps, config.touch_threshold_pixels, touch_signals)
+                             fps, config.touch_threshold_pixels, touch_signals)
             
             # Show preview window
             if not args.headless and display_frame is not None:
@@ -154,6 +169,9 @@ def main() -> None:
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q') or key == 27:  # 'q' or ESC
                     break
+            elif args.headless:
+                # In headless mode, add small delay to maintain reasonable frame rate
+                time.sleep(0.001)  # 1ms delay, similar to cv2.waitKey(1)
             
             # Update FPS
             frame_count += 1
@@ -166,7 +184,6 @@ def main() -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        sink.close()
         camera.release()
         if not args.headless:
             cv2.destroyAllWindows()
