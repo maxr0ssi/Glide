@@ -71,4 +71,10 @@ scroll:
   show_hud: true            # Show visual feedback
   hud_fade_duration_ms: 500 # HUD fade animation duration
   hud_position: "bottom-right"  # HUD position on screen
+  
+  # WebSocket HUD configuration
+  hud_enabled: true         # Enable WebSocket broadcasting
+  hud_ws_port: 8765        # WebSocket port (localhost only)
+  hud_ws_token: null       # Optional security token (auto-generated if null)
+  hud_throttle_hz: 60      # Event throttle rate (30-120 Hz)
 

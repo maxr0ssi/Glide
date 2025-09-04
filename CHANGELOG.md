@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - WebSocket HUD Broadcasting (Phase 2)
+- **Implemented WebSocket server for HUD events**:
+  - Created `glide/runtime/ipc/ws.py` with localhost-only WebSocket broadcaster
+  - Broadcasts scroll events: `{"type": "scroll", "vy": float, "speed": 0-1}`
+  - Sends hide events when scrolling stops: `{"type": "hide"}`
+  - Throttled to 60 Hz by default (configurable 30-120 Hz)
+  - Optional session token authentication for security
+- **Integrated WebSocket with scroll system**:
+  - VelocityScrollDispatcher now publishes events to WebSocket clients
+  - Added WebSocket configuration to ScrollConfig and config models
+  - New CLI flags: `--hud-port` and `--hud-token`
+- **Added test client**:
+  - `tools/test_ws_client.py` for testing WebSocket connectivity
+- **Dependencies**:
+  - Added `websockets>=12.0` to requirements.txt
+
 ### Changed - Repository Restructuring (Phase 1)
 - **Restructured repository for backend/frontend separation**:
   - Moved `glide/ui/overlay.py` to `dev/preview/overlay.py` (debug-only tool)

@@ -43,6 +43,12 @@ class ScrollConfig(BaseModel):
     show_hud: bool = Field(True, description="Show HUD overlay")
     hud_fade_duration_ms: int = Field(500, ge=100, le=2000, description="HUD fade duration (ms)")
     hud_position: str = Field("bottom-right", description="HUD position on screen")
+    
+    # WebSocket HUD configuration
+    hud_enabled: bool = Field(True, description="Enable WebSocket HUD broadcasting")
+    hud_ws_port: int = Field(8765, ge=1024, le=65535, description="WebSocket port (localhost only)")
+    hud_ws_token: Optional[str] = Field(None, description="Security token (auto-generated if None)")
+    hud_throttle_hz: int = Field(60, ge=30, le=120, description="WebSocket throttle rate in Hz")
 
 
 class TouchProofConfig(BaseModel):

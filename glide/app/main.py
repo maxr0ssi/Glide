@@ -17,6 +17,7 @@ from glide.gestures.velocity_controller import VelocityController
 from dev.preview.overlay import draw_info
 from glide.runtime.actions.config import ScrollConfig
 from glide.runtime.actions.velocity_dispatcher import VelocityScrollDispatcher
+from glide.runtime.ipc.ws import WebSocketBroadcaster
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,6 +27,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--model", type=str, default="models/hand_landmarker.task", help="Path to MediaPipe hand_landmarker.task")
     p.add_argument("--headless", action="store_true", help="Run without preview window")
     p.add_argument("--no-hud", action="store_true", help="Disable scroll HUD overlay")
+    p.add_argument("--hud-port", type=int, help="WebSocket port (overrides config)")
+    p.add_argument("--hud-token", type=str, help="WebSocket security token")
     return p.parse_args()
 
 
@@ -42,6 +45,22 @@ def main() -> None:
     velocity_tracker = VelocityTracker()
     velocity_controller = VelocityController()
     
+    # Initialize WebSocket broadcaster
+    ws_broadcaster = None
+    if config.scroll.hud_enabled and not args.no_hud:
+        try:
+            ws_broadcaster = WebSocketBroadcaster(
+                port=args.hud_port or config.scroll.hud_ws_port,
+                session_token=args.hud_token or config.scroll.hud_ws_token,
+                throttle_hz=config.scroll.hud_throttle_hz
+            )
+            print(f"WebSocket HUD broadcaster started on ws://127.0.0.1:{ws_broadcaster.port}/hud")
+            if ws_broadcaster.session_token:
+                print(f"Session token: {ws_broadcaster.session_token}")
+        except Exception as e:
+            print(f"Failed to start WebSocket broadcaster: {e}")
+            ws_broadcaster = None
+    
     # Initialize scroll dispatcher if enabled
     scroll_dispatcher = None
     if config.scroll.enabled:
@@ -52,8 +71,12 @@ def main() -> None:
             respect_system_preference=config.scroll.respect_system_preference,
             show_hud=config.scroll.show_hud and not args.no_hud and not args.headless,  # Disable HUD in headless mode
             hud_fade_duration_ms=config.scroll.hud_fade_duration_ms,
+            hud_enabled=config.scroll.hud_enabled,
+            hud_ws_port=config.scroll.hud_ws_port,
+            hud_ws_token=config.scroll.hud_ws_token,
+            hud_throttle_hz=config.scroll.hud_throttle_hz
         )
-        scroll_dispatcher = VelocityScrollDispatcher(scroll_config)
+        scroll_dispatcher = VelocityScrollDispatcher(scroll_config, ws_broadcaster)
 
     # FPS tracking
     fps = 0.0
@@ -187,6 +210,8 @@ def main() -> None:
         camera.release()
         if not args.headless:
             cv2.destroyAllWindows()
+        if ws_broadcaster:
+            ws_broadcaster.stop()
 
 
 if __name__ == "__main__":

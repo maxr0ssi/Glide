@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -21,3 +22,9 @@ class ScrollConfig:
     # HUD display
     show_hud: bool = True
     hud_fade_duration_ms: int = 500
+    
+    # WebSocket HUD settings
+    hud_enabled: bool = True
+    hud_ws_port: int = 8765
+    hud_ws_token: Optional[str] = None
+    hud_throttle_hz: int = 60
