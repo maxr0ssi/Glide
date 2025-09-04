@@ -69,7 +69,7 @@ class WebSocketBroadcaster:
         self.port = port
         self.session_token = session_token or secrets.token_urlsafe(16)
         self.throttle = ThrottleController(throttle_hz)
-        self.clients: Set[websockets.server.WebSocketServerProtocol] = set()
+        self.clients: Set = set()
         
         # Asyncio components
         self.loop: Optional[asyncio.AbstractEventLoop] = None
@@ -127,29 +127,11 @@ class WebSocketBroadcaster:
         self._running = True
         logger.info(f"WebSocket server started on ws://127.0.0.1:{self.port}/hud")
     
-    async def _handler(self, websocket: websockets.server.WebSocketServerProtocol, path: str) -> None:
+    async def _handler(self, websocket) -> None:
         """Handle WebSocket connections."""
-        # Check path
-        if path != "/hud":
-            await websocket.close(1002, "Invalid path")
-            return
-        
-        # Verify token if configured
-        if self.session_token:
-            # Check query parameter
-            query_params = dict(param.split('=') for param in 
-                              websocket.path.split('?')[1].split('&') 
-                              if '=' in param) if '?' in websocket.path else {}
-            
-            token = query_params.get('token')
-            if token != self.session_token:
-                logger.warning(f"Invalid token from {websocket.remote_address}")
-                await websocket.close(1008, "Invalid token")
-                return
-        
         # Register client
         self.clients.add(websocket)
-        logger.info(f"Client connected from {websocket.remote_address}")
+        logger.info("Client connected")
         
         try:
             # Send initial config
@@ -160,9 +142,9 @@ class WebSocketBroadcaster:
             
         finally:
             self.clients.remove(websocket)
-            logger.info(f"Client disconnected from {websocket.remote_address}")
+            logger.info("Client disconnected")
     
-    async def _send_config(self, websocket: websockets.server.WebSocketServerProtocol) -> None:
+    async def _send_config(self, websocket) -> None:
         """Send initial configuration to client."""
         config_msg = json.dumps({
             "type": "config",
@@ -217,7 +199,7 @@ class WebSocketBroadcaster:
         # Send to all clients concurrently
         disconnected = []
         
-        async def send_to_client(client: websockets.server.WebSocketServerProtocol):
+        async def send_to_client(client):
             try:
                 await client.send(message)
             except websockets.exceptions.ConnectionClosed:
