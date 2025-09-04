@@ -6,7 +6,7 @@ import time
 from typing import Optional
 from glide.core.types import HandDet, PoseFlags
 from glide.gestures.touchproof import TouchProofSignals
-from glide.ui.utils import get_pixel_distance
+from dev.preview.utils import get_pixel_distance
 
 
 def draw_info(

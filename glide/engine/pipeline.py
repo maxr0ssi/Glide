@@ -8,7 +8,7 @@ from glide.core.types import AppConfig
 from glide.features.kinematics import KinematicsTracker
 from glide.features.poses import check_hand_pose
 from glide.gestures.touchproof import TouchProofDetector
-from glide.ui.overlay import draw_info
+from dev.preview.overlay import draw_info
 
 
 class Pipeline:

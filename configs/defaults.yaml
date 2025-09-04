@@ -1,0 +1,74 @@
+# Glide Configuration File
+
+# Camera settings
+camera_index: 0          # Camera device index (0 for default)
+frame_width: 960         # Frame width in pixels
+mirror: true            # Mirror the camera feed
+
+# Simple touch detection (for visualization only)
+touch_threshold_pixels: 50  # Maximum distance in pixels to consider fingers "touching"
+
+# TouchProof multi-signal detection
+touchproof:
+  # Base proximity thresholds (normalized by finger length)
+  proximity_enter: 0.25       # Distance to consider "close"
+  proximity_exit: 0.40        # Distance to consider "far"
+  proximity_hard_cap: 0.50    # Auto-fail if farther than this
+  
+  # Angle thresholds (degrees) - Relaxed for MacBook Pro camera angle
+  angle_enter_deg: 24.0       # Max angle for parallel fingers (was 20.0)
+  angle_exit_deg: 32.0        # Exit angle threshold (was 28.0)
+  angle_hard_cap_deg: 45.0    # Auto-fail if angle larger than this
+  
+  # Distance interaction parameters
+  distance_near_px: 200       # Finger length in pixels when close
+  distance_far_px: 50         # Finger length in pixels when far
+  k_d: 0.30                   # Proximity distance coefficient
+  k_theta: 2.0                # Angle distance coefficient (reduced from 4.0 for laptop cameras)
+  
+  
+  
+  # MFC (Micro-Flow Cohesion) parameters
+  mfc_window_frames: 5        # Optical flow history window
+  mfc_corr_min: 0.70          # Minimum correlation threshold
+  mfc_mag_ratio_min: 0.6      # Min magnitude ratio
+  mfc_mag_ratio_max: 1.4      # Max magnitude ratio
+  
+  # Temporal stability
+  frames_to_enter: 4          # Frames to confirm touch (increased from 3 for stability)
+  frames_to_exit: 3           # Frames to confirm release
+  
+  # Fused score thresholds - Adjusted for laptop camera reliability
+  fused_enter_threshold: 0.75 # Fused score to trigger touch (was 0.80)
+  fused_exit_threshold: 0.65  # Stricter exit: leave scroll sooner when confidence dips
+  
+  # Signal smoothing
+  ema_alpha: 0.3              # Exponential moving average factor
+  smooth_proximity: true      # Apply EMA to proximity signal
+  
+  # Proximity scoring mode
+  proximity_mode: "adaptive"   # "fixed", "adaptive", or "logarithmic"
+  baseline_learning_rate: 0.02 # How fast to learn baseline distances
+  relative_touch_threshold: 0.85 # Touch when fingers at 85% of baseline
+  
+# Hand detection
+gates:
+  presence_conf: 0.7    # Minimum confidence for hand presence
+  
+# Kinematics tracking
+kinematics:
+  ema_alpha: 0.35       # Exponential moving average smoothing
+  buffer_frames: 24     # Trail buffer size
+  frame_lookback: 5     # Frames to look back for swish detection
+
+# macOS scrolling
+scroll:
+  enabled: true              # Enable scroll functionality
+  pixels_per_degree: 5.0     # 180° = 900 pixels (more responsive)
+  max_velocity: 100.0        # Maximum scroll velocity (pixels per event)
+  acceleration_curve: 1.5    # Exponential acceleration factor
+  respect_system_preference: true  # Use natural scrolling if enabled
+  show_hud: true            # Show visual feedback
+  hud_fade_duration_ms: 500 # HUD fade animation duration
+  hud_position: "bottom-right"  # HUD position on screen
+

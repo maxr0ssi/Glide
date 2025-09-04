@@ -1,0 +1,24 @@
+/**
+ * Glide HUD Styles (Phase 3)
+ * TODO: Implement "liquid glass" design in Phase 6
+ */
+
+:root {
+  --hud-bg: rgba(0, 0, 0, 0.8);
+  --hud-text: white;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.hud-placeholder {
+  background: var(--hud-bg);
+  color: var(--hud-text);
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* TODO: Phase 6 - Implement liquid glass visuals */

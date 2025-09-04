@@ -1,0 +1,14 @@
+{
+  "name": "glide-hud",
+  "version": "0.1.0",
+  "description": "Web-based HUD for Glide (Phase 3)",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'TODO: Implement in Phase 3 - vite dev'",
+    "build": "echo 'TODO: Implement in Phase 3 - vite build'",
+    "preview": "echo 'TODO: Implement in Phase 3 - vite preview'"
+  },
+  "devDependencies": {
+    "TODO": "Add vite, typescript, etc. in Phase 3"
+  }
+}

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Repository Restructuring (Phase 1)
+- **Restructured repository for backend/frontend separation**:
+  - Moved `glide/ui/overlay.py` to `dev/preview/overlay.py` (debug-only tool)
+  - Moved `glide/ui/utils.py` to `dev/preview/utils.py` 
+  - Moved `glide/runtime/ui/scroll_hud.py` to `glide/runtime/hud/legacy_tk_hud.py`
+  - Created `configs/defaults.yaml` (copied from `glide/io/defaults.yaml`, kept for compatibility)
+- **Added new directory structure for future phases**:
+  - `glide/runtime/ipc/` for WebSocket IPC (Phase 2)
+  - `web/hud/` for web-based HUD (Phase 3)
+  - `apps/hud-macos/` for Swift macOS app (Phase 4)
+  - `dev/` for development-only tools
+- **Created placeholder files for future implementation**:
+  - WebSocket broadcaster stub in `glide/runtime/ipc/ws.py`
+  - Web HUD scaffolding (package.json, index.html, TypeScript files)
+  - macOS app README and directory structure
+
 ### Removed - Complete CircularEvent and Legacy Code Overhaul
 - **Removed All CircularEvent Dependencies**:
   - Deleted `scroll.py` and `quartz_scroll.py` (legacy ScrollDispatcher and macOS implementation)

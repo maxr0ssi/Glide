@@ -14,7 +14,7 @@ from glide.features.kinematics import KinematicsTracker
 from glide.gestures.touchproof import TouchProofDetector
 from glide.gestures.velocity_tracker import VelocityTracker
 from glide.gestures.velocity_controller import VelocityController
-from glide.ui.overlay import draw_info
+from dev.preview.overlay import draw_info
 from glide.runtime.actions.config import ScrollConfig
 from glide.runtime.actions.velocity_dispatcher import VelocityScrollDispatcher
 
