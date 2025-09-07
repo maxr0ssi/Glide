@@ -82,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed - Repository Restructuring (Phase 1)
 - **Restructured repository for backend/frontend separation**:
   - Moved `glide/ui/overlay.py` to `dev/preview/overlay.py` (debug-only tool)
-  - Moved `glide/ui/utils.py` to `dev/preview/utils.py` 
+  - Moved `glide/ui/utils.py` to `dev/preview/utils.py`
   - Moved `glide/runtime/ui/scroll_hud.py` to `glide/runtime/hud/legacy_tk_hud.py`
   - Created `configs/defaults.yaml` (copied from `glide/io/defaults.yaml`, kept for compatibility)
 - **Added new directory structure for future phases**:

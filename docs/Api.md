@@ -102,7 +102,7 @@ class ScrollConfig:
     show_hud: bool = True
     hud_fade_duration_ms: int = 500
     hud_position: str = "bottom-right"
-    
+
     # WebSocket HUD configuration
     hud_enabled: bool = True
     hud_ws_port: int = 8765
@@ -148,11 +148,11 @@ class MyCustomScrollAction(ContinuousScrollAction):
     def begin_gesture(self, velocity: Vec2D) -> bool:
         # Start scrolling
         pass
-    
+
     def update_gesture(self, velocity: Vec2D) -> bool:
         # Update scroll velocity
         pass
-        
+
     def end_gesture(self) -> bool:
         # End scrolling, hand off to momentum
         pass

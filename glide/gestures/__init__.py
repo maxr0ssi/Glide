@@ -1,9 +1,9 @@
 """Gesture detection modules."""
 
 from glide.gestures.touchproof import (
+    MicroFlowTracker,
     TouchProofDetector,
     TouchProofSignals,
-    MicroFlowTracker,
 )
 
 __all__ = [

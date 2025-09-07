@@ -57,7 +57,7 @@ scroll:
   pixels_per_degree: 5.0     # Scroll sensitivity (higher = more responsive)
   max_velocity: 100.0        # Maximum scroll speed in pixels
   respect_system_preference: true  # Honor natural scrolling
-  
+
   # HUD configuration
   hud_enabled: true          # Enable WebSocket HUD
   hud_ws_port: 8765         # WebSocket port

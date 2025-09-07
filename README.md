@@ -4,10 +4,24 @@ I like eating while reading or watching videos. My laptop is less keen. Keyboard
 (plus it looks rather cool in lectures flicking through slides)
 Connect your index and middle finger to activate. Then move them up or down to scroll. Keep the crumbs on your plate and the smears off your kit.
 
+## Quick Start
+
+```bash
+# Clone and setup (one-time)
+git clone https://github.com/maxr0ssi/Glide.git
+cd Glide
+make setup
+
+# Run with native HUD
+make run
+
+# That's it! Press CMD+CTRL+G to show the HUD
+```
+
 ## Features
 
 - **TouchProof Technology** - Multi-signal fusion for detecting when fingertips touch
-- **MediaPipe Hand Tracking** - Accurate 21-point hand landmark detection  
+- **MediaPipe Hand Tracking** - Accurate 21-point hand landmark detection
 - **Velocity-Based Scrolling** - Natural movement-driven scrolling
 - **Real-time Visual Feedback** - Live preview with touch status and signal visualization
 - **Native macOS HUD** - Beautiful floating heads-up display with camera feed integration
@@ -48,11 +62,10 @@ The scrolling feature uses PyObjC to generate native scroll events.
 
 ### Building the Native HUD (Optional)
 
-Glide includes a (not-so) beautiful native macOS HUD that shows scroll feedback and camera feed:
+Glide includes a native macOS HUD that shows scroll feedback and camera feed:
 
 ```bash
-cd apps/hud-macos
-swift build
+make build-hud  # Builds the Swift HUD
 ```
 
 ## Usage
@@ -158,20 +171,20 @@ Glide/
 
 ## Configuration
 
-Edit `glide/io/defaults.yaml` to customize:
+Edit `configs/defaults.yaml` to customize:
 
 ```yaml
 # TouchProof detection
 touchproof:
   proximity_enter: 0.25      # Normalized distance to trigger
-  angle_enter_deg: 20.0      # Max angle for parallel fingers
-  fused_enter_threshold: 0.80  # Fused score to trigger touch
-  
-# Circular gesture detection  
-circular:
-  min_angle_deg: 90.0        # Minimum angle to trigger
-  min_speed: 1.5             # Minimum speed to start
-  cooldown_ms: 500           # Pause between gestures
+  angle_enter_deg: 24.0      # Max angle for parallel fingers
+  fused_enter_threshold: 0.75  # Fused score to trigger touch
+
+# Scrolling
+scroll:
+  enabled: true              # Enable scroll functionality
+  pixels_per_degree: 5.0     # Scroll sensitivity
+  max_velocity: 100.0        # Maximum scroll velocity
 ```
 
 ## Output Format

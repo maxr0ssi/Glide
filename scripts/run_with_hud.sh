@@ -1,56 +1,111 @@
 #!/bin/bash
 # Run Glide with native macOS HUD
 
-echo "Starting Glide with native HUD..."
-echo ""
+set -e  # Exit on error
 
-# Check if Swift is installed
+echo "🚀 Starting Glide with native HUD..."
+echo
+
+# Check dependencies
 if ! command -v swift &> /dev/null; then
-    echo "Error: Swift is not installed. Please install Xcode Command Line Tools."
+    echo "❌ Error: Swift is not installed. Please install Xcode Command Line Tools:"
+    echo "  xcode-select --install"
     exit 1
 fi
 
-# Start Python backend in headless mode
-echo "Starting gesture detection backend..."
-python -m glide.app.main --headless &
-PYTHON_PID=$!
+if ! command -v python3.10 &> /dev/null; then
+    echo "❌ Error: Python 3.10 is required but not found"
+    exit 1
+fi
 
-# Give backend time to start
-sleep 2
-
-# Build and start Swift HUD
-echo "Building and starting HUD..."
-cd apps/hud-macos
-swift build --configuration release
-
-if [ $? -eq 0 ]; then
-    swift run --configuration release &
-    HUD_PID=$!
+# Activate virtual environment if it exists
+if [ -d "venv", ]; then
+    source venv/bin/activate
+elif [ -d ".venv310" ]; then
+    source .venv310/bin/activate
 else
-    echo "Failed to build HUD"
-    kill $PYTHON_PID 2>/dev/null
+    echo "⚠️  No virtual environment found. Run 'make setup' first."
     exit 1
 fi
-
-cd ../..
-
-echo ""
-echo "Glide is running!"
-echo "- Press CMD+CTRL+G to toggle HUD"
-echo "- Click expand button to see camera feed"
-echo "- Press Ctrl+C to stop"
-echo ""
 
 # Function to cleanup on exit
 cleanup() {
-    echo "Stopping Glide..."
-    kill $PYTHON_PID 2>/dev/null
-    kill $HUD_PID 2>/dev/null
+    echo -e "\n\n🛑 Stopping Glide..."
+
+    # Kill Python backend
+    if [ ! -z "$PYTHON_PID" ]; then
+        echo "  Stopping backend (PID: $PYTHON_PID)..."
+        kill -TERM $PYTHON_PID 2>/dev/null
+        sleep 0.5
+        kill -9 $PYTHON_PID 2>/dev/null || true
+    fi
+
+    # Kill HUD
+    if [ ! -z "$HUD_PID" ]; then
+        echo "  Stopping HUD (PID: $HUD_PID)..."
+        kill -TERM $HUD_PID 2>/dev/null
+        sleep 0.5
+        kill -9 $HUD_PID 2>/dev/null || true
+    fi
+
+    # Kill any process on port 8765
+    lsof -ti:8765 | xargs kill -9 2>/dev/null || true
+
+    echo "✓ Cleanup complete"
     exit 0
 }
 
 # Set trap for cleanup
-trap cleanup INT TERM
+trap cleanup EXIT INT TERM
+
+# Start Python backend in headless mode
+echo "🐍 Starting gesture detection backend..."
+python -m glide.app.main --headless &
+PYTHON_PID=$!
+echo "  Backend started (PID: $PYTHON_PID)"
+
+# Give backend time to initialize
+sleep 2
+
+# Check if backend is running
+if ! ps -p $PYTHON_PID > /dev/null; then
+    echo "❌ Backend failed to start"
+    exit 1
+fi
+
+# Build and start Swift HUD
+echo "🖥️  Building and starting HUD..."
+cd apps/hud-macos
+
+# Build in release mode if needed
+if [ ! -f .build/release/GlideHUD ] || [ "$(find Sources -newer .build/release/GlideHUD 2>/dev/null)" ]; then
+    echo "  Building HUD (this may take a moment)..."
+    swift build --configuration release
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to build HUD"
+        exit 1
+    fi
+else
+    echo "  Using existing HUD build"
+fi
+
+# Run the HUD
+swift run --configuration release &
+HUD_PID=$!
+echo "  HUD started (PID: $HUD_PID)"
+
+cd ../..
+
+echo
+echo "✅ Glide is running!"
+echo
+echo "📖 Instructions:"
+echo "  • Press CMD+CTRL+G to toggle HUD"
+echo "  • Click expand button (⤢) for camera feed"
+echo "  • Touch index + middle fingers to scroll"
+echo "  • Press Ctrl+C to stop"
+echo
+echo "🔍 Monitoring... (Press Ctrl+C to stop)"
 
 # Wait for processes
 wait

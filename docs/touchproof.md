@@ -41,7 +41,7 @@ Thresholds adjust based on distance:
 d_enter = base_d_enter * (1 + 0.3 * distance_factor)
 d_exit = base_d_exit * (1 + 0.3 * distance_factor)
 
-# Angle: stricter when close  
+# Angle: stricter when close
 θ_enter = base_θ_enter - 4.0 * (1 - distance_factor)
 θ_exit = base_θ_exit - 4.0 * (1 - distance_factor)
 ```
@@ -87,10 +87,10 @@ touchproof:
   distance_far_px: 50
   k_d: 0.30              # Proximity coefficient
   k_theta: 4.0           # Angle coefficient
-  
+
   # Conditional triggers
   gapness_uncertain_band: [0.35, 0.65]
-  
+
   # Fusion thresholds
   fused_enter_threshold: 0.62
   fused_exit_threshold: 0.50

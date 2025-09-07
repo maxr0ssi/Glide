@@ -121,14 +121,14 @@ This document tracks all external dependencies for the Glide project, including 
 
 ### macOS
 - **Version**: 12.0+ (Monterey or later)
-- **Reason**: 
+- **Reason**:
   - Quartz Event Services API for scrolling
   - NSVisualEffectView materials for HUD
   - Swift 5.5+ features
 - **Python**: 3.10+ (for typing features)
 
 ### Accessibility Permission
-- **Required for**: 
+- **Required for**:
   - Scroll event injection
   - Global hotkey (CMD+CTRL+G) for HUD
 - **API**: `AXIsProcessTrusted()`

@@ -14,47 +14,48 @@ touchproof:
   proximity_enter: 0.25       # Distance to consider "close"
   proximity_exit: 0.40        # Distance to consider "far"
   proximity_hard_cap: 0.50    # Auto-fail if farther than this
-  
+
   # Angle thresholds (degrees) - Relaxed for MacBook Pro camera angle
   angle_enter_deg: 24.0       # Max angle for parallel fingers (was 20.0)
   angle_exit_deg: 32.0        # Exit angle threshold (was 28.0)
   angle_hard_cap_deg: 45.0    # Auto-fail if angle larger than this
-  
+
   # Distance interaction parameters
   distance_near_px: 200       # Finger length in pixels when close
   distance_far_px: 50         # Finger length in pixels when far
   k_d: 0.30                   # Proximity distance coefficient
   k_theta: 2.0                # Angle distance coefficient (reduced from 4.0 for laptop cameras)
-  
-  
-  
+
+
+
   # MFC (Micro-Flow Cohesion) parameters
   mfc_window_frames: 5        # Optical flow history window
+  mfc_patch_size: 15          # Patch size for MFC flow calculation
   mfc_corr_min: 0.70          # Minimum correlation threshold
   mfc_mag_ratio_min: 0.6      # Min magnitude ratio
   mfc_mag_ratio_max: 1.4      # Max magnitude ratio
-  
+
   # Temporal stability
   frames_to_enter: 4          # Frames to confirm touch (increased from 3 for stability)
   frames_to_exit: 3           # Frames to confirm release
-  
+
   # Fused score thresholds - Adjusted for laptop camera reliability
   fused_enter_threshold: 0.75 # Fused score to trigger touch (was 0.80)
   fused_exit_threshold: 0.65  # Stricter exit: leave scroll sooner when confidence dips
-  
+
   # Signal smoothing
   ema_alpha: 0.3              # Exponential moving average factor
   smooth_proximity: true      # Apply EMA to proximity signal
-  
+
   # Proximity scoring mode
   proximity_mode: "adaptive"   # "fixed", "adaptive", or "logarithmic"
   baseline_learning_rate: 0.02 # How fast to learn baseline distances
   relative_touch_threshold: 0.85 # Touch when fingers at 85% of baseline
-  
+
 # Hand detection
 gates:
   presence_conf: 0.7    # Minimum confidence for hand presence
-  
+
 # Kinematics tracking
 kinematics:
   ema_alpha: 0.35       # Exponential moving average smoothing
@@ -71,7 +72,7 @@ scroll:
   show_hud: true            # Show visual feedback
   hud_fade_duration_ms: 500 # HUD fade animation duration
   hud_position: "bottom-right"  # HUD position on screen
-  
+
   # WebSocket HUD configuration
   hud_enabled: true         # Enable WebSocket broadcasting
   hud_ws_port: 8765        # WebSocket port (localhost only)
@@ -84,4 +85,3 @@ scroll:
 optical_flow:
   window_frames: 5         # Optical flow history window
   patch_size: 15          # Patch size for flow calculation
-

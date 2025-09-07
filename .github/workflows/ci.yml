@@ -1,0 +1,240 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, UI ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  PYTHON_VERSION: '3.10'
+
+jobs:
+  lint:
+    name: Lint Code
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-lint-${{ hashFiles('requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-lint-
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+
+    # - name: Run Ruff
+    #   run: |
+    #     ruff check glide/ tests/ scripts/ || true
+    #     echo "::warning::Ruff check completed (non-blocking)"
+
+    - name: Check Black formatting
+      run: |
+        black --check --diff glide/ tests/ || true
+        echo "::warning::Black check completed (non-blocking)"
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-typecheck-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-typecheck-
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Run MyPy
+      run: |
+        mypy glide/ || true
+        echo "::warning::MyPy check completed (non-blocking)"
+
+  test-macos:
+    name: Test on macOS
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/Library/Caches/pip
+        key: ${{ runner.os }}-pip-test-${{ matrix.python-version }}-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-test-${{ matrix.python-version }}-
+          ${{ runner.os }}-pip-test-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+
+    - name: Download MediaPipe models
+      run: |
+        python setup_models.py
+
+    - name: Run tests
+      run: |
+        # Create tests directory if it doesn't exist
+        mkdir -p tests
+        # Run pytest if tests exist, otherwise just import test
+        if [ "$(ls -A tests/*.py 2>/dev/null)" ]; then
+          pytest tests/ -v
+        else
+          echo "No tests found, running import test only"
+          python -c "import glide; print('Import successful')"
+        fi
+
+    - name: Test CLI
+      run: |
+        python -m glide.app.main --help
+
+  build-swift-hud:
+    name: Build Swift HUD
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode.app
+
+    - name: Swift version
+      run: swift --version
+
+    - name: Build HUD
+      run: |
+        cd apps/hud-macos
+        swift build --configuration release
+
+    - name: Run Swift tests
+      run: |
+        cd apps/hud-macos
+        swift test || true
+        echo "::warning::Swift tests completed (non-blocking)"
+
+  validate-configs:
+    name: Validate Configuration
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install PyYAML
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyyaml
+
+    - name: Validate YAML configs
+      run: |
+        python -c "
+        import yaml
+        import sys
+
+        configs = [
+            'configs/defaults.yaml',
+            'glide/io/defaults.yaml',
+            '.pre-commit-config.yaml',
+            '.github/workflows/ci.yml'
+        ]
+
+        for config in configs:
+            try:
+                with open(config, 'r') as f:
+                    yaml.safe_load(f)
+                print(f'✓ {config} is valid')
+            except Exception as e:
+                print(f'✗ {config} is invalid: {e}')
+                sys.exit(1)
+        "
+
+    - name: Check config consistency
+      run: |
+        echo "Checking if configs/defaults.yaml is canonical..."
+        if ! diff -q configs/defaults.yaml glide/io/defaults.yaml > /dev/null; then
+          echo "::warning::Config files differ - configs/defaults.yaml should be canonical"
+        fi
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+        exit-code: '0'  # Don't fail the build
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, test-macos, build-swift-hud, validate-configs]
+    if: always()
+
+    steps:
+    - name: Summary
+      run: |
+        echo "## CI Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Lint | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Type Check | ${{ needs.type-check.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Test macOS | ${{ needs.test-macos.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Build Swift HUD | ${{ needs.build-swift-hud.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Validate Configs | ${{ needs.validate-configs.result }} |" >> $GITHUB_STEP_SUMMARY

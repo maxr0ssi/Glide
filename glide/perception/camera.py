@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from typing import Optional
 import time
 
-import cv2  # type: ignore
+import cv2
 
 from glide.core.contracts import Frame, FrameSource
 
 
 class Camera(FrameSource):
-    def __init__(self, index: int = 0, width: int = 960, mirror: bool = True, fps_cap: Optional[float] = None) -> None:
+    def __init__(
+        self, index: int = 0, width: int = 960, mirror: bool = True, fps_cap: float | None = None
+    ) -> None:
         self.index = index
         self.width = width
         self.mirror = mirror
@@ -19,7 +20,7 @@ class Camera(FrameSource):
             self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, float(width))
         self._last_ts = 0.0
 
-    def read(self) -> Optional[Frame]:
+    def read(self) -> Frame | None:
         if not self._cap.isOpened():
             return None
         ok, img = self._cap.read()
@@ -40,5 +41,3 @@ class Camera(FrameSource):
 
     def release(self) -> None:
         self._cap.release()
-
-

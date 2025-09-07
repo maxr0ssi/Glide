@@ -5,23 +5,23 @@ from __future__ import annotations
 import argparse
 import logging
 import time
-import cv2  # type: ignore
+
+import cv2
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-from glide.core.types import AppConfig
+from dev.preview.overlay import draw_info
+from glide.core.config_models import AppConfig
+from glide.features.kinematics import KinematicsTracker
+from glide.features.poses import check_hand_pose
+from glide.gestures.touchproof import TouchProofDetector
+from glide.gestures.velocity_controller import VelocityController
+from glide.gestures.velocity_tracker import VelocityTracker
 from glide.perception.camera import Camera
 from glide.perception.hands import HandLandmarker
-from glide.features.poses import check_hand_pose
-from glide.features.kinematics import KinematicsTracker
-from glide.gestures.touchproof import TouchProofDetector
-from glide.gestures.velocity_tracker import VelocityTracker
-from glide.gestures.velocity_controller import VelocityController
-from dev.preview.overlay import draw_info
 from glide.runtime.actions.config import ScrollConfig
 from glide.runtime.actions.velocity_dispatcher import VelocityScrollDispatcher
 from glide.runtime.ipc.ws import WebSocketBroadcaster
@@ -29,9 +29,14 @@ from glide.runtime.ipc.ws import WebSocketBroadcaster
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Glide - Gesture Detection")
-    p.add_argument("--config", type=str, default="glide/io/defaults.yaml")
+    p.add_argument("--config", type=str, default="configs/defaults.yaml")
     p.add_argument("--debug", action="store_true")
-    p.add_argument("--model", type=str, default="models/hand_landmarker.task", help="Path to MediaPipe hand_landmarker.task")
+    p.add_argument(
+        "--model",
+        type=str,
+        default="models/hand_landmarker.task",
+        help="Path to MediaPipe hand_landmarker.task",
+    )
     p.add_argument("--headless", action="store_true", help="Run without preview window")
     p.add_argument("--no-hud", action="store_true", help="Disable scroll HUD overlay")
     p.add_argument("--hud-port", type=int, help="WebSocket port (overrides config)")
@@ -41,7 +46,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     """Main entry point for Glide gesture control application.
-    
+
     Initializes camera, hand detection, gesture tracking, and optionally
     starts the WebSocket HUD broadcaster for the native macOS HUD.
     """
@@ -50,13 +55,15 @@ def main() -> None:
 
     camera = Camera(index=config.camera_index, width=config.frame_width, mirror=config.mirror)
     hands = HandLandmarker(model_path=args.model)
-    kinematics = KinematicsTracker(ema_alpha=config.kinematics.ema_alpha, buffer_frames=config.kinematics.buffer_frames)
+    kinematics = KinematicsTracker(
+        ema_alpha=config.kinematics.ema_alpha, buffer_frames=config.kinematics.buffer_frames
+    )
     touchproof = TouchProofDetector(config.touchproof)
-    
+
     # Initialize velocity-based scrolling components
     velocity_tracker = VelocityTracker()
     velocity_controller = VelocityController()
-    
+
     # Initialize WebSocket broadcaster
     ws_broadcaster = None
     if config.scroll.hud_enabled and not args.no_hud:
@@ -65,15 +72,17 @@ def main() -> None:
                 port=args.hud_port or config.scroll.hud_ws_port,
                 session_token=args.hud_token or config.scroll.hud_ws_token,
                 throttle_hz=config.scroll.hud_throttle_hz,
-                camera_throttle_hz=config.scroll.camera_throttle_hz
+                camera_throttle_hz=config.scroll.camera_throttle_hz,
             )
-            logging.info(f"WebSocket HUD broadcaster started on ws://127.0.0.1:{ws_broadcaster.port}/hud")
+            logging.info(
+                f"WebSocket HUD broadcaster started on ws://127.0.0.1:{ws_broadcaster.port}/hud"
+            )
             if ws_broadcaster.session_token:
                 logging.debug(f"Session token: {ws_broadcaster.session_token}")
         except Exception as e:
             logging.error(f"Failed to start WebSocket broadcaster: {e}")
             ws_broadcaster = None
-    
+
     # Initialize scroll dispatcher if enabled
     scroll_dispatcher = None
     if config.scroll.enabled:
@@ -82,12 +91,14 @@ def main() -> None:
             max_velocity=config.scroll.max_velocity,
             acceleration_curve=config.scroll.acceleration_curve,
             respect_system_preference=config.scroll.respect_system_preference,
-            show_hud=config.scroll.show_hud and not args.no_hud and not args.headless,  # Disable HUD in headless mode
+            show_hud=config.scroll.show_hud
+            and not args.no_hud
+            and not args.headless,  # Disable HUD in headless mode
             hud_fade_duration_ms=config.scroll.hud_fade_duration_ms,
             hud_enabled=config.scroll.hud_enabled,
             hud_ws_port=config.scroll.hud_ws_port,
             hud_ws_token=config.scroll.hud_ws_token,
-            hud_throttle_hz=config.scroll.hud_throttle_hz
+            hud_throttle_hz=config.scroll.hud_throttle_hz,
         )
         scroll_dispatcher = VelocityScrollDispatcher(scroll_config, ws_broadcaster)
 
@@ -95,47 +106,52 @@ def main() -> None:
     fps = 0.0
     last_time = time.time()
     frame_count = 0
-    
+
     # Event display timer
     last_event = None
     event_display_time = 0
-    
+
     # Track TouchProof state for changes
     last_touchproof_active = False
     last_hands_count = 0
-    
+
     try:
         while True:
             # frame_start = time.time()
-            
+
             frame = camera.read()
             if frame is None:
                 break
-                
+
             # Make a copy for display
             display_frame = frame.image.copy() if not args.headless else None
-            
+
             # Publish camera frame to HUD if WebSocket is enabled
             # Only publish every Nth frame as configured
-            if ws_broadcaster and frame.image is not None and frame_count % config.scroll.camera_frame_skip == 0:
+            if (
+                ws_broadcaster
+                and frame.image is not None
+                and frame_count % config.scroll.camera_frame_skip == 0
+            ):
                 ws_broadcaster.publish_camera_frame(frame.image)
-            
+
             detection = hands.detect(frame.image)
-            
+
             # Initialize poses to None
             poses = None
             # is_touching = False
             touch_signals = None
-            
+
             # Track hands count for TouchProof updates
-            current_hands_count = 1 if detection and detection.confidence >= config.gates.presence_conf else 0
-            
+            current_hands_count = (
+                1 if detection and detection.confidence >= config.gates.presence_conf else 0
+            )
+
             if detection is None or detection.confidence < config.gates.presence_conf:
                 # Draw info even when no hand detected
                 if display_frame is not None:
-                    draw_info(display_frame, None, None,
-                              fps, config.touch_threshold_pixels, None)
-                
+                    draw_info(display_frame, None, None, fps, config.touch_threshold_pixels, None)
+
                 # Check if hands count changed
                 if current_hands_count != last_hands_count:
                     if ws_broadcaster:
@@ -145,98 +161,100 @@ def main() -> None:
             else:
                 # ROI/palm-relative alignment and fingertip kinematics
                 kin_state = kinematics.compute(detection.landmarks)
-                
+
                 # Pose gate
                 poses = check_hand_pose(detection.landmarks)
-                
+
                 # TouchProof multi-signal detection
                 touch_signals = touchproof.update(
-                    detection.landmarks,
-                    frame.image,
-                    frame.width,
-                    frame.height
+                    detection.landmarks, frame.image, frame.width, frame.height
                 )
-                
-                # Track touch state changes
-                if not hasattr(main, '_was_touching'):
-                    main._was_touching = False
-                main._was_touching = touch_signals.is_touching
-                
+
                 # Check for TouchProof state changes
                 current_touchproof_active = touch_signals.is_touching if touch_signals else False
-                if (current_touchproof_active != last_touchproof_active or 
-                    current_hands_count != last_hands_count):
+                if (
+                    current_touchproof_active != last_touchproof_active
+                    or current_hands_count != last_hands_count
+                ):
                     if ws_broadcaster:
-                        ws_broadcaster.publish_touchproof(current_touchproof_active, current_hands_count)
+                        ws_broadcaster.publish_touchproof(
+                            current_touchproof_active, current_hands_count
+                        )
                     last_touchproof_active = current_touchproof_active
                     last_hands_count = current_hands_count
-                
-                if kin_state is not None and (poses.open_palm or poses.pointing_index or poses.two_up):
+
+                if kin_state is not None and (
+                    poses.open_palm or poses.pointing_index or poses.two_up
+                ):
                     # Get current time and finger length
                     now_ms = int(time.time() * 1000)
-                    avg_finger_len = (kin_state.finger_length_idx + 
-                                    (kin_state.finger_length_mid or kin_state.finger_length_idx)) / 2.0
-                    
+                    avg_finger_len = (
+                        kin_state.finger_length_idx
+                        + (kin_state.finger_length_mid or kin_state.finger_length_idx)
+                    ) / 2.0
+
                     # Update smooth scrolling if enabled
                     scroll_update = None
                     if config.scroll.enabled and scroll_dispatcher:
                         # Get fingertip positions (index=8, middle=12 in MediaPipe)
                         index_tip = detection.landmarks[8]
                         middle_tip = detection.landmarks[12]
-                        
+
                         # Update velocity tracker
                         velocity = velocity_tracker.update(
                             (index_tip.x, index_tip.y),
                             (middle_tip.x, middle_tip.y),
                             touch_signals.is_touching,
-                            now_ms
+                            now_ms,
                         )
-                        
+
                         # Check for single finger (only index extended)
                         is_single_finger = poses.pointing_index and not poses.two_up
-                        
+
                         # Update wheel controller
                         # High-five: open palm + not touching + not in two-finger or pointing pose
                         is_high_five = (
-                            poses.open_palm and not touch_signals.is_touching and not (poses.two_up or poses.pointing_index)
+                            poses.open_palm
+                            and not touch_signals.is_touching
+                            and not (poses.two_up or poses.pointing_index)
                         )
                         scroll_update = velocity_controller.update(
-                            velocity,
-                            touch_signals.is_touching,
-                            is_high_five,
-                            now_ms
+                            velocity, touch_signals.is_touching, is_high_five, now_ms
                         )
-                        
+
                         # Debug logging (disabled for production)
                         # if velocity:
                         #     print(f"[DEBUG] vel=({velocity.x:.3f}, {velocity.y:.3f}), mag={velocity.magnitude:.3f}, touching={touch_signals.is_touching}, state={scroll_update.state.value}, active={scroll_update.is_active}")
-                        
+
                         # Dispatch continuous scrolling
                         if scroll_update:
                             scroll_dispatcher.dispatch(
-                                scroll_update.velocity,
-                                scroll_update.state,
-                                scroll_update.is_active
+                                scroll_update.velocity, scroll_update.state, scroll_update.is_active
                             )
-                    
-                
+
                 # Draw info with detection
                 if display_frame is not None:
-                    draw_info(display_frame, detection, poses,
-                             fps, config.touch_threshold_pixels, touch_signals)
-            
+                    draw_info(
+                        display_frame,
+                        detection,
+                        poses,
+                        fps,
+                        config.touch_threshold_pixels,
+                        touch_signals,
+                    )
+
             # Show preview window
             if not args.headless and display_frame is not None:
-                cv2.imshow('Glide - Gesture Detection', display_frame)
-                
+                cv2.imshow("Glide - Gesture Detection", display_frame)
+
                 # Check for quit
                 key = cv2.waitKey(1) & 0xFF
-                if key == ord('q') or key == 27:  # 'q' or ESC
+                if key == ord("q") or key == 27:  # 'q' or ESC
                     break
             elif args.headless:
                 # In headless mode, add small delay to maintain reasonable frame rate
                 time.sleep(0.001)  # 1ms delay, similar to cv2.waitKey(1)
-            
+
             # Update FPS
             frame_count += 1
             current_time = time.time()

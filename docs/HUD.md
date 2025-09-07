@@ -19,7 +19,7 @@ The HUD system consists of two main components:
   - Auto-hides after 2 seconds of inactivity
   - Minimal CPU usage
 
-- **Expanded Mode (500x400px)** 
+- **Expanded Mode (500x400px)**
   - Everything from minimized mode
   - Live camera feed with hand tracking overlay
   - TouchProof status indicator
@@ -125,7 +125,7 @@ Option 1: With Python backend
 # Terminal 1
 python -m glide.app.main --headless
 
-# Terminal 2  
+# Terminal 2
 cd apps/hud-macos && swift run
 ```
 

@@ -4,23 +4,23 @@ class HUDViewController: NSViewController {
     private var visualEffectView: NSVisualEffectView!
     private var containerView: PassThroughContainerView!
     private var currentWindowSize: HUDWindow.WindowSize = .minimized
-    
+
     // UI Components
     private var upArrowView: ArrowView!
     private var downArrowView: ArrowView!
     private var speedBarView: SpeedBarView!
     private var expandButton: NSButton!
     private var statusLabel: NSTextField!
-    
+
     // Expanded mode components
     private var cameraToggleButton: NSButton?
     private var cameraImageView: NSImageView?
     private var touchProofIndicator: TouchProofIndicatorView?
-    
+
     // Effects
     private var particleEmitter: CAEmitterLayer?
     private var glowLayer: CALayer?
-    
+
     override func loadView() {
         // Create visual effect view with proper frame
         let initialFrame = NSRect(x: 0, y: 0, width: 300, height: 150)
@@ -28,24 +28,24 @@ class HUDViewController: NSViewController {
         visualEffectView.material = .sheet
         visualEffectView.blendingMode = .behindWindow
         visualEffectView.state = .active
-        
+
         // Create container view with ice-white background
         containerView = PassThroughContainerView(frame: initialFrame)
         containerView.wantsLayer = true
         containerView.layer?.backgroundColor = NSColor(white: 1.0, alpha: 0.95).cgColor
         containerView.layer?.cornerRadius = 12
         containerView.layer?.masksToBounds = true
-        
+
         // Add container to visual effect view
         visualEffectView.addSubview(containerView)
-        
+
         // Set as main view
         self.view = visualEffectView
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         // Set up constraints
         containerView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -54,13 +54,13 @@ class HUDViewController: NSViewController {
             containerView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8),
             containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -8)
         ])
-        
+
         // Add frost border after constraints are set
         addFrostBorder()
-        
+
         setupMinimizedUI()
         setupParticleEffects()
-        
+
         // Listen for WebSocket events
         NotificationCenter.default.addObserver(
             self,
@@ -68,21 +68,21 @@ class HUDViewController: NSViewController {
             name: NSNotification.Name("GlideScrollEvent"),
             object: nil
         )
-        
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleHideEvent),
             name: NSNotification.Name("GlideHideEvent"),
             object: nil
         )
-        
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleCameraEvent(_:)),
             name: NSNotification.Name("GlideCameraEvent"),
             object: nil
         )
-        
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleTouchProofEvent(_:)),
@@ -98,15 +98,15 @@ class HUDViewController: NSViewController {
             object: nil
         )
     }
-    
+
     private func setupMinimizedUI() {
         // Direction arrows
         upArrowView = ArrowView(direction: .up)
         downArrowView = ArrowView(direction: .down)
-        
+
         // Speed bar
         speedBarView = SpeedBarView()
-        
+
         // Expand button
         expandButton = NSButton()
         expandButton.bezelStyle = .regularSquare
@@ -122,7 +122,7 @@ class HUDViewController: NSViewController {
         expandButton.alphaValue = 1.0  // Ensure button starts visible
         expandButton.target = self
         expandButton.action = #selector(toggleSize)
-        
+
         // Add subviews
         for view in [upArrowView, downArrowView, speedBarView, expandButton].compactMap({ $0 }) {
             view.translatesAutoresizingMaskIntoConstraints = false
@@ -131,7 +131,7 @@ class HUDViewController: NSViewController {
 
         // Allow clicks only on the expand button; pass through other mouse events
         containerView.passThroughAllowedView = expandButton
-        
+
         // Layout
         NSLayoutConstraint.activate([
             // Arrows on the left
@@ -139,25 +139,25 @@ class HUDViewController: NSViewController {
             upArrowView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 25),
             upArrowView.widthAnchor.constraint(equalToConstant: 40),
             upArrowView.heightAnchor.constraint(equalToConstant: 40),
-            
+
             downArrowView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 30),
             downArrowView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -25),
             downArrowView.widthAnchor.constraint(equalToConstant: 40),
             downArrowView.heightAnchor.constraint(equalToConstant: 40),
-            
+
             // Speed bar in the center
             speedBarView.leadingAnchor.constraint(equalTo: upArrowView.trailingAnchor, constant: 30),
             speedBarView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
             speedBarView.widthAnchor.constraint(equalToConstant: 150),
             speedBarView.heightAnchor.constraint(equalToConstant: 60),
-            
+
             // Expand button on the right
             expandButton.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -12),
             expandButton.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
             expandButton.widthAnchor.constraint(equalToConstant: 30),
             expandButton.heightAnchor.constraint(equalToConstant: 30)
         ])
-        
+
         // Add hover tracking for expand button
         let trackingArea = NSTrackingArea(
             rect: expandButton.bounds,
@@ -167,7 +167,7 @@ class HUDViewController: NSViewController {
         )
         expandButton.addTrackingArea(trackingArea)
     }
-    
+
     override func mouseEntered(with event: NSEvent) {
         if event.trackingArea?.userInfo?["button"] as? String == "expand" {
             NSAnimationContext.runAnimationGroup { context in
@@ -177,7 +177,7 @@ class HUDViewController: NSViewController {
             }
         }
     }
-    
+
     override func mouseExited(with event: NSEvent) {
         if event.trackingArea?.userInfo?["button"] as? String == "expand" {
             NSAnimationContext.runAnimationGroup { context in
@@ -187,16 +187,16 @@ class HUDViewController: NSViewController {
             }
         }
     }
-    
+
     private func addFrostBorder() {
         let borderLayer = CAShapeLayer()
         borderLayer.fillColor = NSColor.clear.cgColor
         borderLayer.strokeColor = NSColor(red: 0.89, green: 0.95, blue: 0.99, alpha: 0.6).cgColor
         borderLayer.lineWidth = 2
         borderLayer.lineDashPattern = [4, 2]
-        
+
         containerView.layer?.addSublayer(borderLayer)
-        
+
         // Update path when view resizes
         containerView.postsFrameChangedNotifications = true
         NotificationCenter.default.addObserver(
@@ -206,7 +206,7 @@ class HUDViewController: NSViewController {
             object: containerView
         )
     }
-    
+
     @objc private func updateFrostBorder() {
         guard let borderLayer = containerView.layer?.sublayers?.first(where: { $0 is CAShapeLayer }) as? CAShapeLayer else { return }
         let path = NSBezierPath(roundedRect: containerView.bounds.insetBy(dx: 1, dy: 1), xRadius: 11, yRadius: 11)
@@ -233,14 +233,14 @@ class HUDViewController: NSViewController {
         }
         borderLayer.path = cgPath
     }
-    
+
     private func setupParticleEffects() {
         particleEmitter = CAEmitterLayer()
         particleEmitter?.emitterPosition = CGPoint(x: containerView.bounds.width / 2, y: containerView.bounds.height)
         particleEmitter?.emitterSize = CGSize(width: containerView.bounds.width, height: 1)
         particleEmitter?.emitterShape = .line
         particleEmitter?.renderMode = .additive
-        
+
         let cell = CAEmitterCell()
         cell.contents = createIceParticleImage()
         cell.birthRate = 0
@@ -251,11 +251,11 @@ class HUDViewController: NSViewController {
         cell.scale = 0.3
         cell.scaleRange = 0.2
         cell.alphaSpeed = -0.3
-        
+
         particleEmitter?.emitterCells = [cell]
         containerView.layer?.addSublayer(particleEmitter!)
     }
-    
+
     private func createIceParticleImage() -> CGImage? {
         let size = CGSize(width: 8, height: 8)
         let image = NSImage(size: size, flipped: false) { rect in
@@ -265,18 +265,18 @@ class HUDViewController: NSViewController {
         }
         return image.cgImage(forProposedRect: nil, context: nil, hints: nil)
     }
-    
+
     @objc private func handleScrollEvent(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let vy = userInfo["vy"] as? Double,
               let speed = userInfo["speed"] as? Double else { return }
-        
+
         DispatchQueue.main.async { [weak self] in
             self?.updateScrollUI(velocity: vy, speed: speed)
             self?.startParticleAnimation()
         }
     }
-    
+
     private func updateScrollUI(velocity: Double, speed: Double) {
         // Update arrows
         if velocity > 0 {
@@ -286,19 +286,19 @@ class HUDViewController: NSViewController {
             upArrowView.setActive(false)
             downArrowView.setActive(true)
         }
-        
+
         // Update speed bar
         speedBarView.setSpeed(CGFloat(speed))
     }
-    
+
     private func startParticleAnimation() {
         guard let cell = particleEmitter?.emitterCells?.first else { return }
-        
+
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         cell.birthRate = 5
         CATransaction.commit()
-        
+
         // Stop after a short time
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard let cell = self?.particleEmitter?.emitterCells?.first else { return }
@@ -308,7 +308,7 @@ class HUDViewController: NSViewController {
             CATransaction.commit()
         }
     }
-    
+
     @objc private func handleHideEvent() {
         // Reset UI
         DispatchQueue.main.async { [weak self] in
@@ -317,23 +317,23 @@ class HUDViewController: NSViewController {
             self?.speedBarView.setSpeed(0)
         }
     }
-    
+
     @objc private func toggleSize() {
         if let window = view.window as? HUDWindow {
             window.toggleSize()
         }
     }
-    
+
     @objc private func expandButtonClicked() {
         toggleSize()
     }
-    
+
     func windowSizeChanged(to newSize: HUDWindow.WindowSize) {
         currentWindowSize = newSize
-        
+
         // Update expand button icon
         expandButton.title = newSize == .minimized ? "⤢" : "⤡"
-        
+
         if newSize == .expanded {
             setupExpandedUI()
             // Notify backend about mode change
@@ -351,7 +351,7 @@ class HUDViewController: NSViewController {
             }
         }
     }
-    
+
     private func setupExpandedUI() {
         // Camera preview
         cameraImageView = NSImageView(frame: NSRect.zero)
@@ -362,11 +362,11 @@ class HUDViewController: NSViewController {
         cameraImageView?.layer?.borderColor = NSColor(red: 0.89, green: 0.95, blue: 0.99, alpha: 0.4).cgColor
         cameraImageView?.layer?.borderWidth = 1
         cameraImageView?.translatesAutoresizingMaskIntoConstraints = false
-        
+
         // TouchProof indicator
         touchProofIndicator = TouchProofIndicatorView(frame: NSRect.zero)
         touchProofIndicator?.translatesAutoresizingMaskIntoConstraints = false
-        
+
         if let cameraImageView = cameraImageView,
            let touchProofIndicator = touchProofIndicator {
             containerView.addSubview(cameraImageView)
@@ -378,14 +378,14 @@ class HUDViewController: NSViewController {
                 containerView.addSubview(cameraToggleButton!)
                 containerView.allowedViews.append(cameraToggleButton!)
             }
-            
+
             NSLayoutConstraint.activate([
                 // Camera takes most of the space
                 cameraImageView.topAnchor.constraint(equalTo: speedBarView.bottomAnchor, constant: 20),
                 cameraImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
                 cameraImageView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
                 cameraImageView.bottomAnchor.constraint(equalTo: touchProofIndicator.topAnchor, constant: -10),
-                
+
                 // TouchProof at bottom
                 touchProofIndicator.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
                 touchProofIndicator.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
@@ -401,7 +401,7 @@ class HUDViewController: NSViewController {
             }
         }
     }
-    
+
     private func teardownExpandedUI() {
         cameraImageView?.removeFromSuperview()
         cameraImageView = nil
@@ -410,26 +410,26 @@ class HUDViewController: NSViewController {
         touchProofIndicator?.removeFromSuperview()
         touchProofIndicator = nil
     }
-    
+
     @objc private func handleCameraEvent(_ notification: Notification) {
         guard currentWindowSize == .expanded,
               let userInfo = notification.userInfo,
               let frameData = userInfo["frame"] as? Data,
               let image = NSImage(data: frameData) else { return }
-        
+
         DispatchQueue.main.async { [weak self] in
             self?.cameraImageView?.image = image
         }
     }
-    
+
     @objc private func handleTouchProofEvent(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let active = userInfo["active"] as? Bool,
               let hands = userInfo["hands"] as? Int else { return }
-        
+
         DispatchQueue.main.async { [weak self] in
             self?.touchProofIndicator?.updateState(active: active, handsCount: hands)
-            
+
             // Add glow effect when active
             if active {
                 self?.addTouchProofGlow()
@@ -438,17 +438,17 @@ class HUDViewController: NSViewController {
             }
         }
     }
-    
+
     private func addTouchProofGlow() {
         guard glowLayer == nil else { return }
-        
+
         glowLayer = CALayer()
         glowLayer?.backgroundColor = NSColor(red: 0.70, green: 0.90, blue: 0.98, alpha: 0.3).cgColor
         glowLayer?.cornerRadius = 12
         glowLayer?.frame = containerView.bounds.insetBy(dx: -5, dy: -5)
-        
+
         containerView.layer?.insertSublayer(glowLayer!, at: 0)
-        
+
         // Pulse animation
         let animation = CABasicAnimation(keyPath: "opacity")
         animation.fromValue = 0.3
@@ -458,7 +458,7 @@ class HUDViewController: NSViewController {
         animation.repeatCount = .infinity
         glowLayer?.add(animation, forKey: "pulse")
     }
-    
+
     private func removeTouchProofGlow() {
         glowLayer?.removeFromSuperlayer()
         glowLayer = nil
@@ -488,36 +488,36 @@ class ArrowView: NSView {
     enum Direction {
         case up, down
     }
-    
+
     private let direction: Direction
     private var isActive = false
     private let arrowLayer = CAShapeLayer()
-    
+
     init(direction: Direction) {
         self.direction = direction
         super.init(frame: .zero)
         setup()
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     private func setup() {
         wantsLayer = true
         layer?.addSublayer(arrowLayer)
-        
+
         arrowLayer.fillColor = NSColor(red: 0.15, green: 0.20, blue: 0.22, alpha: 0.3).cgColor
         arrowLayer.strokeColor = NSColor(red: 0.15, green: 0.20, blue: 0.22, alpha: 0.5).cgColor
         arrowLayer.lineWidth = 1.5
     }
-    
+
     override func layout() {
         super.layout()
-        
+
         let path = NSBezierPath()
         let center = CGPoint(x: bounds.width / 2, y: bounds.height / 2)
-        
+
         if direction == .up {
             path.move(to: CGPoint(x: center.x, y: center.y - 12))
             path.line(to: CGPoint(x: center.x - 10, y: center.y + 6))
@@ -529,7 +529,7 @@ class ArrowView: NSView {
             path.line(to: CGPoint(x: center.x + 10, y: center.y - 6))
             path.close()
         }
-        
+
         let cgPath = CGMutablePath()
         var points = [CGPoint](repeating: .zero, count: 3)
         for i in 0..<path.elementCount {
@@ -547,13 +547,13 @@ class ArrowView: NSView {
         }
         arrowLayer.path = cgPath
     }
-    
+
     func setActive(_ active: Bool) {
         isActive = active
-        
+
         if active {
             arrowLayer.fillColor = NSColor(red: 0.70, green: 0.90, blue: 0.98, alpha: 0.8).cgColor
-            
+
             let pulse = CABasicAnimation(keyPath: "opacity")
             pulse.fromValue = 0.8
             pulse.toValue = 1.0
@@ -571,32 +571,32 @@ class ArrowView: NSView {
 class SpeedBarView: NSView {
     private var speed: CGFloat = 0
     private let barLayers: [CALayer] = (0..<5).map { _ in CALayer() }
-    
+
     override init(frame: NSRect) {
         super.init(frame: frame)
         setup()
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     private func setup() {
         wantsLayer = true
-        
+
         barLayers.forEach { bar in
             bar.backgroundColor = NSColor(red: 0.15, green: 0.20, blue: 0.22, alpha: 0.2).cgColor
             bar.cornerRadius = 2
             layer?.addSublayer(bar)
         }
     }
-    
+
     override func layout() {
         super.layout()
-        
+
         let barWidth = bounds.width / 6
         let barSpacing = barWidth / 5
-        
+
         for (index, bar) in barLayers.enumerated() {
             let height = bounds.height * (0.3 + CGFloat(index) * 0.15)
             let x = CGFloat(index) * (barWidth + barSpacing)
@@ -604,12 +604,12 @@ class SpeedBarView: NSView {
             bar.frame = CGRect(x: x, y: y, width: barWidth, height: height)
         }
     }
-    
+
     func setSpeed(_ newSpeed: CGFloat) {
         speed = max(0, min(1, newSpeed))
-        
+
         let activeBars = Int(speed * 5)
-        
+
         for (index, bar) in barLayers.enumerated() {
             if index < activeBars {
                 bar.backgroundColor = NSColor(red: 0.70, green: 0.90, blue: 0.98, alpha: 0.9).cgColor
@@ -625,21 +625,21 @@ class TouchProofIndicatorView: NSView {
     private var handsCount = 0
     private let statusLabel = NSTextField()
     private let handsIcon = CAShapeLayer()
-    
+
     override init(frame: NSRect) {
         super.init(frame: frame)
         setup()
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     private func setup() {
         wantsLayer = true
         layer?.backgroundColor = NSColor(white: 1.0, alpha: 0.1).cgColor
         layer?.cornerRadius = 20
-        
+
         // Status label
         statusLabel.isEditable = false
         statusLabel.isBordered = false
@@ -649,32 +649,32 @@ class TouchProofIndicatorView: NSView {
         statusLabel.alignment = .center
         statusLabel.stringValue = "TouchProof Off"
         statusLabel.translatesAutoresizingMaskIntoConstraints = false
-        
+
         addSubview(statusLabel)
-        
+
         // Hands icon
         layer?.addSublayer(handsIcon)
         handsIcon.fillColor = NSColor(red: 0.15, green: 0.20, blue: 0.22, alpha: 0.5).cgColor
-        
+
         NSLayoutConstraint.activate([
             statusLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             statusLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
     }
-    
+
     override func layout() {
         super.layout()
-        
+
         // Update hands icon position
         let iconSize: CGFloat = 24
         handsIcon.frame = CGRect(x: 10, y: (bounds.height - iconSize) / 2, width: iconSize, height: iconSize)
         updateHandsIcon()
     }
-    
+
     func updateState(active: Bool, handsCount: Int) {
         self.isActive = active
         self.handsCount = handsCount
-        
+
         if active {
             statusLabel.stringValue = "TouchProof Active (\(handsCount) hand\(handsCount == 1 ? "" : "s"))"
             statusLabel.textColor = NSColor(red: 0.70, green: 0.90, blue: 0.98, alpha: 1.0)
@@ -686,27 +686,27 @@ class TouchProofIndicatorView: NSView {
             layer?.backgroundColor = NSColor(white: 1.0, alpha: 0.1).cgColor
             handsIcon.fillColor = NSColor(red: 0.15, green: 0.20, blue: 0.22, alpha: 0.5).cgColor
         }
-        
+
         updateHandsIcon()
     }
-    
+
     private func updateHandsIcon() {
         let path = NSBezierPath()
         let rect = handsIcon.bounds
-        
+
         // Simple hand icon
         let centerX = rect.width / 2
         let centerY = rect.height / 2
-        
+
         // Palm
         path.appendOval(in: NSRect(x: centerX - 6, y: centerY - 4, width: 12, height: 8))
-        
+
         // Fingers (simplified)
         for i in 0..<3 {
             let x = centerX - 4 + CGFloat(i) * 4
             path.appendRect(NSRect(x: x - 1, y: centerY + 3, width: 2, height: 5))
         }
-        
+
         // Convert to CGPath
         let cgPath = CGMutablePath()
         var points = [CGPoint](repeating: .zero, count: 3)
@@ -729,9 +729,9 @@ class TouchProofIndicatorView: NSView {
                 break
             }
         }
-        
+
         handsIcon.path = cgPath
-        
+
         // Animate if active
         if isActive {
             let pulse = CABasicAnimation(keyPath: "transform.scale")

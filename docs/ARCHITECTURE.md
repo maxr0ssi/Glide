@@ -158,7 +158,7 @@ touchproof:
   angle_enter_deg: 24.0
   fused_enter_threshold: 0.75
   mfc_window_frames: 5
-  
+
 # Scrolling
 scroll:
   enabled: true

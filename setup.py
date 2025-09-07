@@ -1,6 +1,6 @@
 """Setup script for Glide package."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="glide",
@@ -20,6 +20,9 @@ setup(
         ],
     },
     package_data={
-        "glide": ["io/defaults.yaml"],
+        "glide": ["io/defaults.yaml"],  # Keep for backwards compatibility
     },
+    data_files=[
+        ("configs", ["configs/defaults.yaml"]),
+    ],
 )

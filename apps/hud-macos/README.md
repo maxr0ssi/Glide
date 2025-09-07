@@ -13,7 +13,7 @@ A native macOS HUD (Heads-Up Display) for Glide that shows camera feed with hand
    - Speed bars indicating scroll velocity
    - No camera feed (saves CPU)
 
-2. **Expanded Mode** (500x400px) 
+2. **Expanded Mode** (500x400px)
    - Everything from minimized mode
    - Live camera feed with hand tracking overlays
    - TouchProof status indicator
