@@ -1,5 +1,5 @@
 # macOS-specific dependencies for Glide
 # These are required for the Quartz-based scrolling functionality
 
-pyobjc-framework-Quartz==10.1
-pyobjc-framework-AppKit==10.1
+pyobjc-framework-Quartz>=10.1,<11.0
+pyobjc-framework-Cocoa>=10.1,<11.0

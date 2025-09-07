@@ -18,7 +18,7 @@ if sys.platform == "darwin":
     install_requires.extend(
         [
             "pyobjc-framework-Quartz>=10.1",
-            "pyobjc-framework-AppKit>=10.1",
+            "pyobjc-framework-Cocoa>=10.1",
         ]
     )
 
