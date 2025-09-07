@@ -7,7 +7,7 @@ from setuptools import find_packages, setup
 install_requires = [
     "numpy>=1.24.3,<2.0.0",
     "opencv-python>=4.8.1.78",
-    "mediapipe>=0.10.8",
+    "mediapipe>=0.10.8,<0.11.0",
     "PyYAML>=6.0.1",
     "pydantic>=2.5.3",
     "websockets>=12.0",
