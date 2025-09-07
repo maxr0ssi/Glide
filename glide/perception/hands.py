@@ -13,14 +13,14 @@ try:
     from mediapipe.tasks import python as mp_tasks  # type: ignore
     from mediapipe.tasks.python import vision  # type: ignore
     _HAVE_TASKS = True
-except Exception:
+except ImportError:
     _HAVE_TASKS = False
 
 try:
     # Fallback: classic MediaPipe Solutions
     from mediapipe.solutions import hands as mp_hands  # type: ignore
     _HAVE_SOLUTIONS = True
-except Exception:
+except ImportError:
     _HAVE_SOLUTIONS = False
 
 
@@ -54,7 +54,9 @@ class HandLandmarker:
         )
         try:
             self._detector = vision.HandLandmarker.create_from_options(options)
-        except Exception:
+        except (RuntimeError, ValueError) as e:
+            import sys
+            sys.stderr.write(f"Warning: Failed to initialize hand landmarker: {e}\n")
             self._detector = None
 
     def _init_solutions(self) -> None:
@@ -72,10 +74,10 @@ class HandLandmarker:
                 model_complexity=0,
             )
             # Using MediaPipe Solutions Hands as fallback
-        except Exception:
+        except (RuntimeError, ValueError) as e:
             self._solutions = None
             import sys
-            sys.stderr.write("Error: Failed to initialize hand tracking. Detection disabled.\n")
+            sys.stderr.write(f"Error: Failed to initialize hand tracking: {e}\n")
 
     def detect(self, image_bgr) -> Optional[HandDet]:
         # Tasks path
@@ -111,8 +113,8 @@ class HandLandmarker:
                 if res.multi_handedness and len(res.multi_handedness) > 0:
                     handedness = res.multi_handedness[0].classification[0].label
                     score = float(res.multi_handedness[0].classification[0].score)
-            except Exception:
-                pass
+            except (IndexError, AttributeError):
+                pass  # Keep defaults if handedness data is missing
             landmarks: List[Landmark] = [
                 Landmark(
                     x=pt.x, 

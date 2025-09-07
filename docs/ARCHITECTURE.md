@@ -15,9 +15,14 @@ glide/
 ├── gestures/      # Touch and gesture detection
 ├── runtime/       # Platform-specific action implementations
 │   ├── actions/   # Scroll actions and dispatching
-│   └── ui/        # Runtime UI components (HUD)
+│   ├── hud/       # Legacy HUD components
+│   └── ipc/       # WebSocket communication
 ├── io/            # Configuration and event output
-└── ui/            # Visual overlay and display
+└── dev/           # Development-only tools
+    └── preview/   # Debug visualization
+
+apps/
+└── hud-macos/     # Native macOS HUD application
 ```
 
 ## Core Components
@@ -46,14 +51,26 @@ glide/
 ### 4. **Runtime Layer** (`runtime/`)
 - **VelocityScrollDispatcher**: Routes velocity data to platform-specific actions
 - **ContinuousScrollAction**: macOS implementation using scroll phases
-- **ScrollHUD**: Visual feedback overlay for scroll actions
+- **WebSocketBroadcaster** (`ipc/ws.py`): Local WebSocket server for HUD communication
+  - Broadcasts scroll events, TouchProof status, and camera frames
+  - Throttled event streaming (configurable 30-120 Hz)
+  - Session token authentication
+  - Localhost-only for security
 
-### 5. **Application Layer** (`app/`)
+### 5. **Native HUD** (`apps/hud-macos/`)
+- **Swift macOS Application**: Floating heads-up display
+  - NSPanel with CMD+CTRL+G hotkey activation
+  - Two modes: minimized (300x150) and expanded (500x400)
+  - Live camera feed with hand tracking overlay (expanded mode)
+  - "Liquid nitrogen ice" aesthetic with translucent effects
+  - WebSocket client for real-time updates
+
+### 6. **Application Layer** (`app/`)
 - **Main**: Primary application entry point and processing loop
 - Orchestrates perception, feature extraction, and gesture detection
 - Integrates runtime actions for platform functionality
 
-### 6. **Configuration & I/O** (`io/`)
+### 7. **Configuration & I/O** (`io/`)
 - **defaults.yaml**: YAML-based configuration with sensible defaults
 - **event_output**: JSON event streaming to stdout
 - **replay**: Record and replay sessions for testing
@@ -101,12 +118,26 @@ Camera → Frame → HandDetector → Landmarks → HandAligner → Features
                                                     ↓
                                             Velocity-based Scrolling
                                                     ↓
-                                    ┌───────────────┴───────────────┐
-                                    │                               │
-                              Event Output → JSON    VelocityScrollDispatcher
-                                                                │
-                                                        Platform Action
-                                                        (e.g., scroll)
+                        ┌───────────────────┴───────────────────┐
+                        │                                       │
+                  Event Output → JSON            VelocityScrollDispatcher
+                                                        │
+                                                Platform Action
+                                                (e.g., scroll)
+                                                        │
+                                                WebSocket Broadcaster
+                                                        │
+                                    ┌───────────────────┴───────────────────┐
+                                    │                                       │
+                              Scroll Events                          Camera Frames
+                              TouchProof Status                    (Expanded Mode Only)
+                                    │                                       │
+                                    └───────────────┬───────────────────┘
+                                                    │
+                                              Native HUD (macOS)
+                                              - Visual Feedback
+                                              - Camera Preview
+                                              - TouchProof Indicator
 ```
 
 ## Performance Characteristics
@@ -124,19 +155,26 @@ The system loads configuration from `glide/io/defaults.yaml`:
 # TouchProof detection
 touchproof:
   proximity_enter: 0.25
-  angle_enter_deg: 20.0
-  fused_enter_threshold: 0.80
+  angle_enter_deg: 24.0
+  fused_enter_threshold: 0.75
+  mfc_window_frames: 5
   
-# Velocity tracking
-velocity:
-  window_ms: 100
-  min_samples: 3
-
 # Scrolling
 scroll:
   enabled: true
-  pixels_per_degree: 2.22
+  pixels_per_degree: 5.0
   respect_system_preference: true
+  # WebSocket HUD
+  hud_enabled: true
+  hud_ws_port: 8765
+  hud_throttle_hz: 60
+  camera_throttle_hz: 30
+  camera_frame_skip: 3
+
+# Optical flow
+optical_flow:
+  window_frames: 5
+  patch_size: 15
 ```
 
 Pydantic models in `core/config_models.py` provide validation.

@@ -49,6 +49,14 @@ class ScrollConfig(BaseModel):
     hud_ws_port: int = Field(8765, ge=1024, le=65535, description="WebSocket port (localhost only)")
     hud_ws_token: Optional[str] = Field(None, description="Security token (auto-generated if None)")
     hud_throttle_hz: int = Field(60, ge=30, le=120, description="WebSocket throttle rate in Hz")
+    camera_throttle_hz: int = Field(30, ge=10, le=60, description="Camera frame throttle rate in Hz")
+    camera_frame_skip: int = Field(3, ge=1, le=10, description="Only publish every Nth camera frame")
+
+
+class OpticalFlowConfig(BaseModel):
+    """Configuration for optical flow calculations."""
+    window_frames: int = Field(5, ge=3, le=10, description="Optical flow history window")
+    patch_size: int = Field(15, ge=5, le=30, description="Patch size for flow calculation")
 
 
 class TouchProofConfig(BaseModel):
@@ -133,6 +141,7 @@ class AppConfig(BaseModel):
     kinematics: KinematicsConfig = Field(default_factory=KinematicsConfig)
     touchproof: TouchProofConfig = Field(default_factory=TouchProofConfig)
     scroll: ScrollConfig = Field(default_factory=ScrollConfig)
+    optical_flow: OpticalFlowConfig = Field(default_factory=OpticalFlowConfig)
     
     @classmethod
     def from_yaml(cls, path: Optional[str]) -> "AppConfig":

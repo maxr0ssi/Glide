@@ -3,8 +3,15 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import time
 import cv2  # type: ignore
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 from glide.core.types import AppConfig
 from glide.perception.camera import Camera
@@ -33,6 +40,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Main entry point for Glide gesture control application.
+    
+    Initializes camera, hand detection, gesture tracking, and optionally
+    starts the WebSocket HUD broadcaster for the native macOS HUD.
+    """
     args = parse_args()
     config = AppConfig.from_yaml(args.config)
 
@@ -52,13 +64,14 @@ def main() -> None:
             ws_broadcaster = WebSocketBroadcaster(
                 port=args.hud_port or config.scroll.hud_ws_port,
                 session_token=args.hud_token or config.scroll.hud_ws_token,
-                throttle_hz=config.scroll.hud_throttle_hz
+                throttle_hz=config.scroll.hud_throttle_hz,
+                camera_throttle_hz=config.scroll.camera_throttle_hz
             )
-            print(f"WebSocket HUD broadcaster started on ws://127.0.0.1:{ws_broadcaster.port}/hud")
+            logging.info(f"WebSocket HUD broadcaster started on ws://127.0.0.1:{ws_broadcaster.port}/hud")
             if ws_broadcaster.session_token:
-                print(f"Session token: {ws_broadcaster.session_token}")
+                logging.debug(f"Session token: {ws_broadcaster.session_token}")
         except Exception as e:
-            print(f"Failed to start WebSocket broadcaster: {e}")
+            logging.error(f"Failed to start WebSocket broadcaster: {e}")
             ws_broadcaster = None
     
     # Initialize scroll dispatcher if enabled
@@ -87,6 +100,10 @@ def main() -> None:
     last_event = None
     event_display_time = 0
     
+    # Track TouchProof state for changes
+    last_touchproof_active = False
+    last_hands_count = 0
+    
     try:
         while True:
             # frame_start = time.time()
@@ -98,6 +115,11 @@ def main() -> None:
             # Make a copy for display
             display_frame = frame.image.copy() if not args.headless else None
             
+            # Publish camera frame to HUD if WebSocket is enabled
+            # Only publish every Nth frame as configured
+            if ws_broadcaster and frame.image is not None and frame_count % config.scroll.camera_frame_skip == 0:
+                ws_broadcaster.publish_camera_frame(frame.image)
+            
             detection = hands.detect(frame.image)
             
             # Initialize poses to None
@@ -105,11 +127,21 @@ def main() -> None:
             # is_touching = False
             touch_signals = None
             
+            # Track hands count for TouchProof updates
+            current_hands_count = 1 if detection and detection.confidence >= config.gates.presence_conf else 0
+            
             if detection is None or detection.confidence < config.gates.presence_conf:
                 # Draw info even when no hand detected
                 if display_frame is not None:
                     draw_info(display_frame, None, None,
                               fps, config.touch_threshold_pixels, None)
+                
+                # Check if hands count changed
+                if current_hands_count != last_hands_count:
+                    if ws_broadcaster:
+                        ws_broadcaster.publish_touchproof(False, current_hands_count)
+                    last_hands_count = current_hands_count
+                    last_touchproof_active = False
             else:
                 # ROI/palm-relative alignment and fingertip kinematics
                 kin_state = kinematics.compute(detection.landmarks)
@@ -129,6 +161,15 @@ def main() -> None:
                 if not hasattr(main, '_was_touching'):
                     main._was_touching = False
                 main._was_touching = touch_signals.is_touching
+                
+                # Check for TouchProof state changes
+                current_touchproof_active = touch_signals.is_touching if touch_signals else False
+                if (current_touchproof_active != last_touchproof_active or 
+                    current_hands_count != last_hands_count):
+                    if ws_broadcaster:
+                        ws_broadcaster.publish_touchproof(current_touchproof_active, current_hands_count)
+                    last_touchproof_active = current_touchproof_active
+                    last_hands_count = current_hands_count
                 
                 if kin_state is not None and (poses.open_palm or poses.pointing_index or poses.two_up):
                     # Get current time and finger length

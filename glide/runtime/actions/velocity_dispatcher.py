@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from glide.runtime.actions.config import ScrollConfig
@@ -9,6 +10,9 @@ from glide.runtime.actions.continuous_scroll import ContinuousScrollAction
 from glide.gestures.velocity_tracker import Vec2D
 from glide.gestures.velocity_controller import GestureState
 from glide.runtime.ipc.ws import WebSocketBroadcaster
+
+
+logger = logging.getLogger(__name__)
 
 
 class VelocityScrollDispatcher:
@@ -60,6 +64,7 @@ class VelocityScrollDispatcher:
             if self.ws_broadcaster:
                 # Calculate normalized speed (0-1)
                 speed_normalized = min(abs(velocity.y) / self.config.max_velocity, 1.0)
+                logger.debug(f"Dispatching scroll to WebSocket: vy={velocity.y}, speed={speed_normalized}")
                 self.ws_broadcaster.publish_scroll(velocity.y, speed_normalized)
             
             return True

@@ -171,3 +171,8 @@ events.jsonl
 # AI Integrated tools for those who indulge in that sort of thing
 .claude/
 .cursor/
+
+# Swift build artifacts
+apps/hud-macos/.build/
+apps/hud-macos/.swiftpm/
+apps/hud-macos/Package.resolved

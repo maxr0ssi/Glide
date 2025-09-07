@@ -10,6 +10,7 @@ Connect your index and middle finger to activate. Then move them up or down to s
 - **MediaPipe Hand Tracking** - Accurate 21-point hand landmark detection  
 - **Velocity-Based Scrolling** - Natural movement-driven scrolling
 - **Real-time Visual Feedback** - Live preview with touch status and signal visualization
+- **Native macOS HUD** - Beautiful floating heads-up display with camera feed integration
 - **Modular Architecture** - Clean separation of detection, visualization, and output
 
 ## Requirements
@@ -17,6 +18,7 @@ Connect your index and middle finger to activate. Then move them up or down to s
 - Python 3.10+
 - Webcam
 - macOS (for scrolling feature)
+- Swift 5.5+ and Xcode Command Line Tools (for HUD)
 
 ## Installation
 
@@ -44,6 +46,15 @@ To enable scrolling on macOS, you need to grant Accessibility permission:
 
 The scrolling feature uses PyObjC to generate native scroll events.
 
+### Building the Native HUD (Optional)
+
+Glide includes a (not-so) beautiful native macOS HUD that shows scroll feedback and camera feed:
+
+```bash
+cd apps/hud-macos
+swift build
+```
+
 ## Usage
 
 ```bash
@@ -54,7 +65,9 @@ python -m glide.app.main --model models/hand_landmarker.task
 
 - `--config PATH` - Path to config file (default: `config/config.yaml`)
 - `--model PATH` - Path to MediaPipe model (default: auto-detect)
-- `--headless` - Run without preview window
+- `--headless` - Run without preview window (recommended with HUD)
+- `--no-hud` - Disable WebSocket HUD broadcaster
+- `--hud-port PORT` - WebSocket port for HUD (default: 8765)
 - `--record PATH` - Record events to JSONL file
 - `--debug` - Enable debug output
 
@@ -74,6 +87,24 @@ Preview window shows:
 - Detected gestures
 - Hand landmarks
 - FPS counter
+
+### Native HUD (macOS)
+
+The native HUD provides a floating display that:
+- **Minimized Mode**: Shows direction arrows and speed bars
+- **Expanded Mode**: Adds live camera feed with hand tracking overlay
+- Press `CMD+CTRL+G` to toggle HUD visibility
+- Click expand button (⤢) to switch modes
+- Auto-hides in minimized mode, stays visible in expanded mode
+
+To run with HUD:
+```bash
+# Terminal 1: Start backend in headless mode
+python -m glide.app.main --headless
+
+# Terminal 2: Start HUD
+cd apps/hud-macos && swift run
+```
 
 ## How It Works
 
@@ -104,17 +135,22 @@ Glide/
 │   │   └── hands.py     # MediaPipe hand detection
 │   ├── gestures/        # Gesture detection
 │   │   ├── touchproof.py    # Multi-signal fingertip touch detection
-│   │   ├── circular.py      # Circular gesture recognition
-│   │   └── kinematics.py    # Motion tracking
+│   │   ├── velocity_tracker.py  # Velocity-based scrolling
+│   │   └── velocity_controller.py  # Scroll state management
 │   ├── features/        # Feature extraction
-│   │   ├── alignment.py     # Hand coordinate normalization
-│   │   └── fingerpose.py    # Hand pose classification
-│   ├── ui/              # Display and visualization
-│   │   ├── overlay.py   # UI rendering
-│   │   └── utils.py     # Display utilities
+│   │   ├── kinematics.py    # Motion tracking
+│   │   └── poses.py         # Hand pose classification
+│   ├── runtime/         # Runtime components
+│   │   ├── actions/     # Gesture actions
+│   │   │   └── velocity_dispatcher.py  # Scroll event dispatcher
+│   │   └── ipc/         # Inter-process communication
+│   │       └── ws.py    # WebSocket broadcaster for HUD
 │   └── io/              # Input/output
-│       ├── event_output.py  # Event streaming
 │       └── defaults.yaml    # Default configuration
+├── apps/
+│   └── hud-macos/       # Native macOS HUD
+│       ├── Sources/     # Swift source code
+│       └── Package.swift # Swift package manifest
 ├── models/              # MediaPipe models
 ├── docs/                # Documentation
 └── requirements.txt     # Python dependencies

@@ -147,7 +147,10 @@ class TouchProofDetector:
         self._baseline_alpha = config.baseline_learning_rate  # From config
         
         # Micro-flow tracker
-        self.flow_tracker = MicroFlowTracker(window_frames=5)
+        self.flow_tracker = MicroFlowTracker(
+            window_frames=config.mfc_window_frames,
+            patch_size=15  # TODO: add to config if needed
+        )
         
         # Cache for expensive computations
         self._last_mfc_score = 0.5

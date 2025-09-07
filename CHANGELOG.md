@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Native macOS HUD Implementation (Phase 4)
+- **Implemented native Swift macOS HUD application**:
+  - Pure AppKit/Core Animation UI (no WebView)
+  - NSPanel floating window with CMD+CTRL+G hotkey activation
+  - Two display modes:
+    - Minimized (300x150px): Direction arrows and speed bars
+    - Expanded (500x400px): Adds live camera feed with hand tracking overlay
+  - "Liquid nitrogen ice" aesthetic with translucent glass effects
+  - Auto-hide in minimized mode (2s delay), always visible in expanded
+  - TouchProof status indicator with cyan glow when active
+  - Performance optimized camera streaming (throttled, JPEG compression)
+  - Thread-safe WebSocket communication with Python backend
+- **Extended WebSocket Protocol**:
+  - Added camera frame streaming: `{"type": "camera", "frame": base64, "width": int, "height": int}`
+  - Added TouchProof events: `{"type": "touchproof", "active": bool, "hands": int}`
+  - Added mode notifications: `{"type": "mode", "expanded": bool}`
+  - Camera frames only sent to clients in expanded mode
+- **Created comprehensive documentation**:
+  - `docs/HUD.md` - Complete HUD architecture and usage guide
+  - Updated README.md with HUD setup instructions
+  - Added run scripts for easy testing
+
+### Changed - Code Quality Improvements
+- **Improved Error Handling**:
+  - Replaced generic `Exception` catches with specific exception types
+  - Added proper error messages with context
+  - Better error handling in WebSocket, MediaPipe, and file operations
+- **Configuration Management**:
+  - Added `camera_throttle_hz` and `camera_frame_skip` to ScrollConfig
+  - Created `OpticalFlowConfig` for optical flow parameters
+  - Moved hardcoded values to configuration files
+  - Extended config models with proper validation
+- **Logging Improvements**:
+  - Replaced print statements with proper logging in `setup_models.py`
+  - Consistent use of logger throughout codebase
+  - Removed debug print statements from production code
+- **Code Cleanup**:
+  - Fixed PEP 8 compliance issues
+  - Added missing type hints
+  - Improved docstring coverage
+  - Removed redundant imports and dead code
+
+### Fixed
+- Fixed thread safety issues in HUD by wrapping UI updates in DispatchQueue.main.async
+- Fixed window sizing issues (3-5px bug) with proper frame initialization
+- Fixed expand button not working due to alpha value and hitTest issues
+- Fixed auto-hide behavior to never hide in expanded mode
+- Fixed FPS drops by optimizing camera frame throttling
+- Fixed undefined `target_clients` error in WebSocket broadcaster
+- Fixed keyboard interrupt cleanup with proper signal handlers
+
+### Removed
+- Removed legacy web-based HUD approach in favor of native implementation
+- Removed debug logging statements throughout codebase
+- Removed test scripts and temporary files
+
 ### Added - WebSocket HUD Broadcasting (Phase 2)
 - **Implemented WebSocket server for HUD events**:
   - Created `glide/runtime/ipc/ws.py` with localhost-only WebSocket broadcaster

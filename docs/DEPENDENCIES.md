@@ -62,15 +62,22 @@ This document tracks all external dependencies for the Glide project, including 
   - **json**: No comments support
 - **Removal Plan**: Core dependency, no removal planned
 
-### tkinter
-- **Version**: Built-in
-- **Purpose**: Minimal UI overlays and HUD display
-- **Used by**: `glide.ui.overlay`, `glide.runtime.ui.scroll_hud`
+### websockets
+- **Version**: >= 12.0
+- **Purpose**: WebSocket server for HUD communication
+- **Used by**: `glide.runtime.ipc.ws`
 - **Alternatives Considered**:
-  - **PyQt**: Heavier dependency
-  - **Kivy**: Overkill for simple overlays
-  - **PyObjC NSWindow**: More complex implementation
-- **Removal Plan**: May migrate to native implementation in v2
+  - **aiohttp**: Heavier, full web framework
+  - **tornado**: More complex for simple WebSocket needs
+  - **socket.io**: Unnecessary overhead for local communication
+- **Removal Plan**: Core dependency for HUD communication, no removal planned
+
+### tkinter (DEPRECATED)
+- **Version**: Built-in
+- **Purpose**: Legacy UI overlays (moved to dev/)
+- **Used by**: `dev.preview.overlay` (debug only)
+- **Status**: Replaced by native macOS HUD
+- **Removal Plan**: Kept for development/debugging only
 
 ## Development Dependencies
 
@@ -100,27 +107,75 @@ This document tracks all external dependencies for the Glide project, including 
 - **Size**: ~8MB
 - **Location**: `models/gesture_recognizer.task`
 
+## Native HUD Dependencies (Swift)
+
+### macOS SDK
+- **Version**: 12.0+ (Monterey)
+- **Purpose**: NSPanel, NSVisualEffectView, Core Animation
+- **Used by**: `apps/hud-macos/`
+
+### Swift Package Dependencies
+- None - Pure AppKit/Core Animation implementation
+
 ## Platform Requirements
 
 ### macOS
-- **Version**: 10.12+ (Sierra or later)
-- **Reason**: Quartz Event Services API availability
-- **Python**: 3.8+ (for typing features)
+- **Version**: 12.0+ (Monterey or later)
+- **Reason**: 
+  - Quartz Event Services API for scrolling
+  - NSVisualEffectView materials for HUD
+  - Swift 5.5+ features
+- **Python**: 3.10+ (for typing features)
 
 ### Accessibility Permission
-- **Required for**: Scroll event injection
+- **Required for**: 
+  - Scroll event injection
+  - Global hotkey (CMD+CTRL+G) for HUD
 - **API**: `AXIsProcessTrusted()`
 - **User Flow**: System Preferences → Security & Privacy → Accessibility
 
+### Camera Permission
+- **Required for**: Camera access
+- **User Flow**: System Preferences → Security & Privacy → Camera
+
 ## Installation Notes
 
+### Python Backend
 ```bash
-# Core dependencies
+# Create virtual environment
+python3.10 -m venv venv
+source venv/bin/activate
+
+# Install all dependencies (includes macOS-specific)
 pip install -r requirements.txt
 
-# macOS-specific (for scrolling feature)
-pip install pyobjc-framework-Quartz pyobjc-framework-AppKit
+# Download MediaPipe models
+python setup_models.py
 
-# Development dependencies
+# Development dependencies (optional)
 pip install -r requirements-dev.txt
 ```
+
+### Native HUD (macOS)
+```bash
+# Build the HUD
+cd apps/hud-macos
+swift build --configuration release
+
+# Or use the convenience script
+./scripts/run_with_hud.sh
+```
+
+## WebSocket Protocol
+
+The HUD communicates with the Python backend via WebSocket on `ws://127.0.0.1:8765/hud`:
+
+### Messages from Backend → HUD
+- `{"type": "scroll", "vy": float, "speed": float}` - Scroll events
+- `{"type": "hide"}` - Hide HUD
+- `{"type": "touchproof", "active": bool, "hands": int}` - TouchProof status
+- `{"type": "camera", "frame": base64, "width": int, "height": int}` - Camera frames
+- `{"type": "config", "position": str, "opacity": float}` - Initial config
+
+### Messages from HUD → Backend
+- `{"type": "mode", "expanded": bool}` - Mode change notification

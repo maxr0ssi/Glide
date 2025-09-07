@@ -7,12 +7,22 @@ to connected HUD clients. Includes throttling and session token support.
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 import logging
 import secrets
 import threading
 import time
 from typing import Optional, Set
+
+import numpy as np
+import websockets.server
+import websockets.typing
+
+try:
+    import cv2
+except ImportError:
+    cv2 = None  # Handle gracefully if OpenCV not available
 
 try:
     import websockets
@@ -57,19 +67,23 @@ class WebSocketBroadcaster:
         self,
         port: int = 8765,
         session_token: Optional[str] = None,
-        throttle_hz: int = 60
+        throttle_hz: int = 60,
+        camera_throttle_hz: int = 60
     ):
         """Initialize WebSocket broadcaster.
         
         Args:
             port: Port to listen on (localhost only)
             session_token: Optional security token (auto-generated if None)
-            throttle_hz: Maximum event rate in Hz
+            throttle_hz: Maximum event rate in Hz for scroll events
+            camera_throttle_hz: Maximum frame rate for camera streaming
         """
         self.port = port
         self.session_token = session_token or secrets.token_urlsafe(16)
         self.throttle = ThrottleController(throttle_hz)
-        self.clients: Set = set()
+        self.camera_throttle = ThrottleController(camera_throttle_hz)
+        self.clients: Set[websockets.server.WebSocketServerProtocol] = set()
+        self.expanded_mode_clients: Set[websockets.server.WebSocketServerProtocol] = set()
         
         # Asyncio components
         self.loop: Optional[asyncio.AbstractEventLoop] = None
@@ -107,7 +121,7 @@ class WebSocketBroadcaster:
             # Run event loop
             self.loop.run_forever()
             
-        except Exception as e:
+        except (OSError, RuntimeError) as e:
             logger.error(f"WebSocket server error: {e}")
             import traceback
             traceback.print_exc()
@@ -137,11 +151,15 @@ class WebSocketBroadcaster:
             # Send initial config
             await self._send_config(websocket)
             
-            # Keep connection alive
-            await websocket.wait_closed()
+            # Listen for messages from client
+            async for message in websocket:
+                await self._handle_client_message(websocket, message)
             
+        except websockets.exceptions.ConnectionClosed:
+            pass
         finally:
             self.clients.remove(websocket)
+            self.expanded_mode_clients.discard(websocket)
             logger.info("Client disconnected")
     
     async def _send_config(self, websocket) -> None:
@@ -153,6 +171,34 @@ class WebSocketBroadcaster:
         })
         await websocket.send(config_msg)
     
+    async def _handle_client_message(self, websocket, message) -> None:
+        """Handle messages from client."""
+        try:
+            data = json.loads(message)
+            msg_type = data.get("type")
+            
+            if msg_type == "mode":
+                expanded = data.get("expanded", False)
+                if expanded:
+                    self.expanded_mode_clients.add(websocket)
+                    logger.info("Client switched to expanded mode - camera streaming enabled")
+                else:
+                    self.expanded_mode_clients.discard(websocket)
+                    logger.info("Client switched to minimized mode - camera streaming disabled")
+            elif msg_type == "camera_enabled":
+                enabled = data.get("enabled", True)
+                if enabled:
+                    self.camera_enabled_clients.add(websocket)
+                    logger.info("Client enabled camera streaming")
+                else:
+                    self.camera_enabled_clients.discard(websocket)
+                    logger.info("Client disabled camera streaming")
+                    
+        except json.JSONDecodeError:
+            logger.error(f"Invalid JSON from client: {message}")
+        except (KeyError, AttributeError, ValueError) as e:
+            logger.error(f"Error handling client message: {e}")
+    
     def publish_scroll(self, vy: float, speed_0_1: float) -> None:
         """Publish scroll event to all clients.
         
@@ -160,7 +206,11 @@ class WebSocketBroadcaster:
             vy: Vertical scroll velocity
             speed_0_1: Normalized speed (0-1)
         """
-        if not self.clients or not self.throttle.should_send():
+        if not self.clients:
+            logger.debug(f"No clients connected to send scroll event")
+            return
+        
+        if not self.throttle.should_send():
             return
         
         message = json.dumps({
@@ -169,6 +219,7 @@ class WebSocketBroadcaster:
             "speed": round(min(max(speed_0_1, 0.0), 1.0), 2)  # Clamp to 0-1
         })
         
+        # logger.debug(f"Broadcasting scroll event: {message}")
         self._broadcast(message)
     
     def publish_hide(self) -> None:
@@ -179,6 +230,74 @@ class WebSocketBroadcaster:
         message = json.dumps({"type": "hide"})
         self._broadcast(message)
         self.throttle.reset()
+    
+    def publish_touchproof(self, active: bool, hands_count: int) -> None:
+        """Publish TouchProof state to all clients.
+        
+        Args:
+            active: Whether TouchProof is currently active
+            hands_count: Number of hands detected
+        """
+        if not self.clients:
+            return
+        
+        message = json.dumps({
+            "type": "touchproof",
+            "active": active,
+            "hands": hands_count
+        })
+        
+        logger.debug(f"Broadcasting touchproof event: {message}")
+        self._broadcast(message)
+    
+    def publish_camera_frame(
+        self, 
+        frame_bgr: np.ndarray, 
+        target_width: int = 320,
+        jpeg_quality: int = 60
+    ) -> None:
+        """Publish camera frame to clients in expanded mode.
+        
+        Args:
+            frame_bgr: OpenCV BGR frame
+            target_width: Target width for resize (maintains aspect ratio)
+            jpeg_quality: JPEG compression quality (1-100)
+        """
+        # Only send to clients in expanded mode
+        if not self.expanded_mode_clients or cv2 is None:
+            return
+        
+        if not self.camera_throttle.should_send():
+            return
+        
+        try:
+            # Resize frame to target width maintaining aspect ratio
+            height, width = frame_bgr.shape[:2]
+            target_height = int(height * target_width / width)
+            resized = cv2.resize(frame_bgr, (target_width, target_height))
+            
+            # Convert BGR to RGB for proper color display
+            frame_rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+            
+            # Encode as JPEG
+            encode_params = [cv2.IMWRITE_JPEG_QUALITY, jpeg_quality]
+            _, buffer = cv2.imencode('.jpg', frame_rgb, encode_params)
+            
+            # Base64 encode
+            frame_base64 = base64.b64encode(buffer).decode('utf-8')
+            
+            message = json.dumps({
+                "type": "camera",
+                "frame": frame_base64,
+                "width": target_width,
+                "height": target_height
+            })
+            
+            # Only broadcast to expanded mode clients
+            self._broadcast_to_clients(message, self.expanded_mode_clients)
+            
+        except (cv2.error, ValueError, MemoryError) as e:
+            logger.error(f"Error publishing camera frame: {e}")
     
     def _broadcast(self, message: str) -> None:
         """Broadcast message to all connected clients."""
@@ -214,6 +333,43 @@ class WebSocketBroadcaster:
         # Remove disconnected clients
         for client in disconnected:
             self.clients.discard(client)
+            self.expanded_mode_clients.discard(client)
+    
+    def _broadcast_to_clients(self, message: str, clients: Set) -> None:
+        """Broadcast message to specific set of clients."""
+        if not self.loop or not self._running or not clients:
+            return
+        
+        # Schedule coroutine in the server's event loop
+        asyncio.run_coroutine_threadsafe(
+            self._async_broadcast_to_clients(message, clients),
+            self.loop
+        )
+    
+    async def _async_broadcast_to_clients(self, message: str, clients: Set) -> None:
+        """Async broadcast to specific clients."""
+        if not clients:
+            return
+        
+        # Send to specified clients concurrently
+        disconnected = []
+        
+        async def send_to_client(client):
+            try:
+                await client.send(message)
+            except websockets.exceptions.ConnectionClosed:
+                disconnected.append(client)
+        
+        # Send to specified clients
+        await asyncio.gather(
+            *[send_to_client(client) for client in clients],
+            return_exceptions=True
+        )
+        
+        # Remove disconnected clients
+        for client in disconnected:
+            self.clients.discard(client)
+            self.expanded_mode_clients.discard(client)
     
     def stop(self) -> None:
         """Stop WebSocket server."""
@@ -229,7 +385,7 @@ class WebSocketBroadcaster:
             # Wait for close to complete
             try:
                 future.result(timeout=2.0)
-            except Exception as e:
+            except (asyncio.TimeoutError, RuntimeError) as e:
                 logger.warning(f"Error closing server: {e}")
             
             # Stop event loop

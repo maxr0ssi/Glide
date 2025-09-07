@@ -77,4 +77,11 @@ scroll:
   hud_ws_port: 8765        # WebSocket port (localhost only)
   hud_ws_token: null       # Optional security token (auto-generated if null)
   hud_throttle_hz: 60      # Event throttle rate (30-120 Hz)
+  camera_throttle_hz: 30   # Camera frame throttle rate
+  camera_frame_skip: 3     # Only publish every Nth camera frame
+
+# Optical flow configuration
+optical_flow:
+  window_frames: 5         # Optical flow history window
+  patch_size: 15          # Patch size for flow calculation
 
