@@ -27,10 +27,11 @@ help:
 .PHONY: setup
 setup: $(VENV)/bin/activate models
 
-$(VENV)/bin/activate: requirements.txt
+$(VENV)/bin/activate: requirements.txt requirements-macos.txt
 	$(PYTHON) -m venv $(VENV)
 	$(PIP) install --upgrade pip
 	$(PIP) install -r requirements.txt
+	$(PIP) install -r requirements-macos.txt
 	@echo "✓ Virtual environment created and dependencies installed"
 	@echo "Run 'source venv/bin/activate' to activate"
 

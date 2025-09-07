@@ -33,6 +33,10 @@ pip install --upgrade pip
 echo "📦 Installing dependencies..."
 pip install -r requirements.txt
 
+# Install macOS-specific dependencies
+echo "📦 Installing macOS-specific dependencies..."
+pip install -r requirements-macos.txt
+
 # Download MediaPipe models
 echo "📥 Downloading MediaPipe models..."
 python setup_models.py
