@@ -94,12 +94,30 @@ class TouchProofSignals:
 ```python
 @dataclass
 class ScrollConfig:
-    pixels_per_degree: float = 2.22
+    enabled: bool = True
+    pixels_per_degree: float = 5.0
     max_velocity: float = 100.0
     acceleration_curve: float = 1.5
     respect_system_preference: bool = True
     show_hud: bool = True
     hud_fade_duration_ms: int = 500
+    hud_position: str = "bottom-right"
+
+    # WebSocket HUD configuration
+    hud_enabled: bool = True
+    hud_ws_port: int = 8765
+    hud_ws_token: Optional[str] = None
+    hud_throttle_hz: int = 60
+    camera_throttle_hz: int = 30
+    camera_frame_skip: int = 3
+```
+
+### `OpticalFlowConfig`
+```python
+@dataclass
+class OpticalFlowConfig:
+    window_frames: int = 5      # Optical flow history window
+    patch_size: int = 15        # Patch size for flow calculation
 ```
 
 ## Configuration
@@ -114,6 +132,7 @@ config = AppConfig.from_yaml("glide/io/defaults.yaml")
 config.touchproof    # TouchProof settings
 config.scroll        # Scrolling settings
 config.kinematics    # Motion tracking settings
+config.optical_flow  # Optical flow settings
 ```
 
 ## Extension Points
@@ -123,17 +142,17 @@ config.kinematics    # Motion tracking settings
 Implement continuous scrolling:
 
 ```python
-from glide.runtime.actions.continuous_scroll import ContinuousScrollAction
+from glide.runtime.actions.scroll import ScrollAction
 
-class MyCustomScrollAction(ContinuousScrollAction):
+class MyCustomScrollAction(ScrollAction):
     def begin_gesture(self, velocity: Vec2D) -> bool:
         # Start scrolling
         pass
-    
+
     def update_gesture(self, velocity: Vec2D) -> bool:
         # Update scroll velocity
         pass
-        
+
     def end_gesture(self) -> bool:
         # End scrolling, hand off to momentum
         pass

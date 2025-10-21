@@ -1,1 +1,0 @@
-"""Runtime UI components for visual feedback."""

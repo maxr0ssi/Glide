@@ -4,16 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
-import time
 
 # Import Pydantic configs from separate module
-from glide.core.config_models import (
-    GatesConfig,
-    KinematicsConfig,
-    TouchProofConfig,
-    AppConfig,
-)
 
 
 class GateState(Enum):
@@ -27,8 +19,8 @@ class GateState(Enum):
 class Landmark:
     x: float
     y: float
-    visibility: Optional[float] = None  # MediaPipe visibility score
-    presence: Optional[float] = None    # MediaPipe presence score
+    visibility: float | None = None  # MediaPipe visibility score
+    presence: float | None = None  # MediaPipe presence score
 
 
 @dataclass
@@ -41,10 +33,10 @@ class BBox:
 
 @dataclass
 class HandDet:
-    landmarks: List[Landmark]
+    landmarks: list[Landmark]
     handedness: str
     confidence: float
-    bbox: Optional[BBox] = None
+    bbox: BBox | None = None
 
 
 @dataclass
@@ -52,5 +44,3 @@ class PoseFlags:
     open_palm: bool = False
     pointing_index: bool = False
     two_up: bool = False
-
-

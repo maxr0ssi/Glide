@@ -1,0 +1,124 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-files:
+    name: Check Changed Files
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Get changed files
+      id: changed-files
+      uses: tj-actions/changed-files@v40
+      with:
+        files_yaml: |
+          python:
+            - '**/*.py'
+            - 'requirements*.txt'
+            - 'pyproject.toml'
+            - 'setup.py'
+          swift:
+            - 'apps/hud-macos/**/*.swift'
+            - 'apps/hud-macos/Package.swift'
+          docs:
+            - '**/*.md'
+            - 'docs/**'
+          config:
+            - '**/*.yaml'
+            - '**/*.yml'
+
+    - name: List changed files
+      run: |
+        echo "## Changed Files" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [[ "${{ steps.changed-files.outputs.python_any_changed }}" == "true" ]]; then
+          echo "### Python files:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.changed-files.outputs.python_all_changed_files }}" | tr ' ' '\n' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [[ "${{ steps.changed-files.outputs.swift_any_changed }}" == "true" ]]; then
+          echo "### Swift files:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.changed-files.outputs.swift_all_changed_files }}" | tr ' ' '\n' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [[ "${{ steps.changed-files.outputs.docs_any_changed }}" == "true" ]]; then
+          echo "### Documentation:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.changed-files.outputs.docs_all_changed_files }}" | tr ' ' '\n' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        fi
+
+  check-todos:
+    name: Check TODOs
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check for TODOs
+      run: |
+        echo "## TODO Comments" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Find all TODOs in Python and Swift files
+        todos=$(grep -rn "TODO\|FIXME\|HACK\|XXX" --include="*.py" --include="*.swift" . || true)
+
+        if [ -z "$todos" ]; then
+          echo "✅ No TODO comments found!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "Found the following TODO comments:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "$todos" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "::warning::Found TODO comments in code"
+        fi
+
+  size-check:
+    name: Check PR Size
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Check diff size
+      run: |
+        # Get diff stats
+        git diff --stat origin/${{ github.base_ref }}...${{ github.sha }} > diff_stats.txt
+
+        # Count lines
+        added=$(git diff --numstat origin/${{ github.base_ref }}...${{ github.sha }} | awk '{sum+=$1} END {print sum}')
+        deleted=$(git diff --numstat origin/${{ github.base_ref }}...${{ github.sha }} | awk '{sum+=$2} END {print sum}')
+        total=$((added + deleted))
+
+        echo "## PR Size" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Lines added**: $added" >> $GITHUB_STEP_SUMMARY
+        echo "- **Lines deleted**: $deleted" >> $GITHUB_STEP_SUMMARY
+        echo "- **Total changes**: $total" >> $GITHUB_STEP_SUMMARY
+
+        # Size recommendations
+        if [ $total -lt 100 ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Small PR** - Easy to review!" >> $GITHUB_STEP_SUMMARY
+        elif [ $total -lt 500 ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📊 **Medium PR** - Good size for review" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ **Large PR** - Consider splitting into smaller PRs" >> $GITHUB_STEP_SUMMARY
+          echo "::warning::Large PR detected ($total lines changed)"
+        fi

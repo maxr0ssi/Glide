@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Pulse Ring HUD Implementation (Phase 4)
+- **Implemented native Swift macOS HUD - Complete Redesign**:
+  - Minimal 32x32 Pulse Ring indicator (replaced glass effect design)
+  - Pure AppKit/Core Animation with CAShapeLayer
+  - 5 distinct states with smooth animations:
+    - Idle: subtle breathing pulse (0.6-0.8 opacity)
+    - Active: bright cyan ring when TouchProof engaged
+    - Scrolling Up/Down: directional arrow animations
+    - Hidden: fades out completely
+  - Smart positioning system (4 corners, 20px margins)
+  - Context menu for quick settings access
+  - Hover interactions with smooth scaling
+  - Auto-hide after 2s of inactivity
+  - Thread-safe WebSocket communication with Python backend
+- **Simplified WebSocket Protocol**:
+  - Core events: `{"type": "scroll", "vy": float, "speed": float}`
+  - TouchProof events: `{"type": "touchproof", "active": bool, "hands": int}`
+  - Hide events: `{"type": "hide"}`
+  - Removed camera streaming (not needed for minimal design)
+- **Created comprehensive documentation**:
+  - `docs/PULSE_RING_HUD_DESIGN.md` - Design specification
+  - Updated README.md with recruiter-focused content
+  - Added run scripts for easy testing
+
+### Changed - Code Quality Improvements
+- **Improved Error Handling**:
+  - Replaced generic `Exception` catches with specific exception types
+  - Added proper error messages with context
+  - Better error handling in WebSocket, MediaPipe, and file operations
+- **Configuration Management**:
+  - Added `camera_throttle_hz` and `camera_frame_skip` to ScrollConfig
+  - Created `OpticalFlowConfig` for optical flow parameters
+  - Moved hardcoded values to configuration files
+  - Extended config models with proper validation
+- **Logging Improvements**:
+  - Replaced print statements with proper logging in `setup_models.py`
+  - Consistent use of logger throughout codebase
+  - Removed debug print statements from production code
+- **Code Cleanup**:
+  - Fixed PEP 8 compliance issues
+  - Added missing type hints
+  - Improved docstring coverage
+  - Removed redundant imports and dead code
+
+### Fixed
+- Fixed thread safety issues in HUD by wrapping UI updates in DispatchQueue.main.async
+- Fixed window sizing issues (3-5px bug) with proper frame initialization
+- Fixed expand button not working due to alpha value and hitTest issues
+- Fixed auto-hide behavior to never hide in expanded mode
+- Fixed FPS drops by optimizing camera frame throttling
+- Fixed undefined `target_clients` error in WebSocket broadcaster
+- Fixed keyboard interrupt cleanup with proper signal handlers
+
+### Removed
+- Removed legacy web-based HUD approach in favor of native implementation
+- Removed debug logging statements throughout codebase
+- Removed test scripts and temporary files
+
+### Added - WebSocket HUD Broadcasting (Phase 2)
+- **Implemented WebSocket server for HUD events**:
+  - Created `glide/runtime/ipc/ws.py` with localhost-only WebSocket broadcaster
+  - Broadcasts scroll events: `{"type": "scroll", "vy": float, "speed": 0-1}`
+  - Sends hide events when scrolling stops: `{"type": "hide"}`
+  - Throttled to 60 Hz by default (configurable 30-120 Hz)
+  - Optional session token authentication for security
+- **Integrated WebSocket with scroll system**:
+  - VelocityScrollDispatcher now publishes events to WebSocket clients
+  - Added WebSocket configuration to ScrollConfig and config models
+  - New CLI flags: `--hud-port` and `--hud-token`
+- **Added test client**:
+  - `tools/test_ws_client.py` for testing WebSocket connectivity
+- **Dependencies**:
+  - Added `websockets>=12.0` to requirements.txt
+
+### Changed - Repository Restructuring (Phase 1)
+- **Restructured repository for backend/frontend separation**:
+  - Moved `glide/ui/overlay.py` to `dev/preview/overlay.py` (debug-only tool)
+  - Moved `glide/ui/utils.py` to `dev/preview/utils.py`
+  - Moved `glide/runtime/ui/scroll_hud.py` to `glide/runtime/hud/legacy_tk_hud.py`
+  - Created `configs/defaults.yaml` (copied from `glide/io/defaults.yaml`, kept for compatibility)
+- **Added new directory structure for future phases**:
+  - `glide/runtime/ipc/` for WebSocket IPC (Phase 2)
+  - `web/hud/` for web-based HUD (Phase 3)
+  - `apps/hud-macos/` for Swift macOS app (Phase 4)
+  - `dev/` for development-only tools
+- **Created placeholder files for future implementation**:
+  - WebSocket broadcaster stub in `glide/runtime/ipc/ws.py`
+  - Web HUD scaffolding (package.json, index.html, TypeScript files)
+  - macOS app README and directory structure
+
 ### Removed - Complete CircularEvent and Legacy Code Overhaul
 - **Removed All CircularEvent Dependencies**:
   - Deleted `scroll.py` and `quartz_scroll.py` (legacy ScrollDispatcher and macOS implementation)

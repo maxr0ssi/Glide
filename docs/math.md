@@ -181,5 +181,3 @@ Clamp each axis to `± max_velocity`. Generate CGEvent scrolls with proper phase
 - Scroll mapping: scale `S`, clamp `max_velocity`.
 
 All configurable in `glide/io/defaults.yaml` (validated by `glide/core/config_models.py`).
-
-

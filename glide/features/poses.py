@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from typing import List
-
 from glide.core.types import Landmark, PoseFlags
 
 
-def check_hand_pose(landmarks: List[Landmark]) -> PoseFlags:
+def check_hand_pose(landmarks: list[Landmark]) -> PoseFlags:
     """Check hand pose for common gestures.
 
     - open_palm: spread between index MCP and pinky MCP is large
@@ -26,10 +24,8 @@ def check_hand_pose(landmarks: List[Landmark]) -> PoseFlags:
     spread = abs(index_mcp.x - pinky_mcp.x)
     flags.open_palm = spread > 0.12
 
-    flags.pointing_index = (index_tip.y < middle_tip.y - 0.02)
+    flags.pointing_index = index_tip.y < middle_tip.y - 0.02
 
     flags.two_up = (index_tip.y < ring_tip.y - 0.02) and (middle_tip.y < ring_tip.y - 0.02)
 
     return flags
-
-
