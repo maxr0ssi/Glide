@@ -11,7 +11,7 @@ install_requires = [
     "mediapipe>=0.10.8,<0.11.0",
     "PyYAML>=6.0.1,<7.0.0",
     "pydantic>=2.5.0,<3.0.0",
-    "websockets>=12.0,<13.0",
+    "websockets>=12.0,<16.0",
 ]
 
 # Add macOS-specific dependencies
