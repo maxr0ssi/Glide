@@ -6,7 +6,7 @@ from setuptools import find_packages, setup
 
 # Base dependencies (cross-platform)
 install_requires = [
-    "numpy>=1.24.3,<2.0.0",
+    "numpy>=1.24.3,<3.0.0",
     "opencv-python>=4.8.0,<5.0.0",
     "mediapipe>=0.10.8,<0.11.0",
     "PyYAML>=6.0.1,<7.0.0",
