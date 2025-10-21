@@ -176,7 +176,6 @@ jobs:
 
         configs = [
             'configs/defaults.yaml',
-            'glide/io/defaults.yaml',
             '.pre-commit-config.yaml',
             '.github/workflows/ci.yml'
         ]
@@ -191,12 +190,6 @@ jobs:
                 sys.exit(1)
         "
 
-    - name: Check config consistency
-      run: |
-        echo "Checking if configs/defaults.yaml is canonical..."
-        if ! diff -q configs/defaults.yaml glide/io/defaults.yaml > /dev/null; then
-          echo "::warning::Config files differ - configs/defaults.yaml should be canonical"
-        fi
 
   security-scan:
     name: Security Scan

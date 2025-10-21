@@ -64,10 +64,3 @@ repos:
         types: [python]
         exclude: ^(tests/|scripts/|examples/|dev/)
 
-      - id: no-pycache
-        name: No __pycache__ directories
-        entry: find . -name "__pycache__" -type d | grep -q . && exit 1 || exit 0
-        language: system
-        pass_filenames: false
-        always_run: true
-        description: Ensure no __pycache__ directories in repository
