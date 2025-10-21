@@ -1,10 +1,10 @@
 import Foundation
 
-class WebSocketClient: NSObject {
+final class WebSocketClient: NSObject, @unchecked Sendable {
     private var webSocketTask: URLSessionWebSocketTask?
     private let session: URLSession
     private let url: URL
-    private var isConnected = false
+    private(set) var isConnected = false
     private var reconnectTimer: Timer?
     private var reconnectDelay: TimeInterval = 1.0
 
@@ -21,10 +21,25 @@ class WebSocketClient: NSObject {
         webSocketTask?.delegate = self
         webSocketTask?.resume()
 
-        isConnected = true
-        reconnectDelay = 1.0
+        print("🔌 WebSocket connecting to \(url)")
 
-        print("WebSocket connecting to \(url)")
+        // Send ping to verify connection
+        webSocketTask?.sendPing { [weak self] error in
+            if let error = error {
+                print("❌ WebSocket ping failed: \(error)")
+                self?.isConnected = false
+                self?.handleDisconnection()
+            } else {
+                print("✅ WebSocket connected successfully!")
+                self?.isConnected = true
+                self?.reconnectDelay = 1.0
+                // Notify about connection
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: NSNotification.Name("GlideWebSocketConnected"), object: nil)
+                }
+            }
+        }
+
         receiveMessage()
     }
 
@@ -77,49 +92,46 @@ class WebSocketClient: NSObject {
                 if let vy = json?["vy"] as? Double,
                    let speed = json?["speed"] as? Double {
                     print("Scroll event: vy=\(vy), speed=\(speed)")
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("GlideScrollEvent"),
-                        object: nil,
-                        userInfo: ["vy": vy, "speed": speed]
-                    )
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("GlideScrollEvent"),
+                            object: nil,
+                            userInfo: ["vy": vy, "speed": speed]
+                        )
+                    }
                 }
 
             case "hide":
-                NotificationCenter.default.post(
-                    name: NSNotification.Name("GlideHideEvent"),
-                    object: nil
-                )
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("GlideHideEvent"),
+                        object: nil
+                    )
+                }
 
             case "config":
                 if let config = json {
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("GlideConfigEvent"),
-                        object: nil,
-                        userInfo: config
-                    )
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("GlideConfigEvent"),
+                            object: nil,
+                            userInfo: config
+                        )
+                    }
                 }
 
             case "touchproof":
                 if let active = json?["active"] as? Bool,
                    let hands = json?["hands"] as? Int {
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("GlideTouchProofEvent"),
-                        object: nil,
-                        userInfo: ["active": active, "hands": hands]
-                    )
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("GlideTouchProofEvent"),
+                            object: nil,
+                            userInfo: ["active": active, "hands": hands]
+                        )
+                    }
                 }
 
-            case "camera":
-                if let frameBase64 = json?["frame"] as? String,
-                   let width = json?["width"] as? Int,
-                   let height = json?["height"] as? Int,
-                   let frameData = Data(base64Encoded: frameBase64) {
-                    NotificationCenter.default.post(
-                        name: NSNotification.Name("GlideCameraEvent"),
-                        object: nil,
-                        userInfo: ["frame": frameData, "width": width, "height": height]
-                    )
-                }
 
             default:
                 print("Unknown message type: \(type)")
@@ -160,15 +172,6 @@ class WebSocketClient: NSObject {
         }
     }
 
-    func sendModeChange(expanded: Bool) {
-        let message = "{\"type\": \"mode\", \"expanded\": \(expanded)}"
-        send(message: message)
-    }
-
-    func sendCameraEnabled(enabled: Bool) {
-        let message = "{\"type\": \"camera_enabled\", \"enabled\": \(enabled)}"
-        send(message: message)
-    }
 
     deinit {
         disconnect()
@@ -178,7 +181,9 @@ class WebSocketClient: NSObject {
 extension WebSocketClient: URLSessionWebSocketDelegate {
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
         print("WebSocket connected")
-        NotificationCenter.default.post(name: NSNotification.Name("GlideWebSocketConnected"), object: nil)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: NSNotification.Name("GlideWebSocketConnected"), object: nil)
+        }
     }
 
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {

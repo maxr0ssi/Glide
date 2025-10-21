@@ -1,16 +1,17 @@
 """Setup script for Glide package."""
 
 import sys
+
 from setuptools import find_packages, setup
 
 # Base dependencies (cross-platform)
 install_requires = [
     "numpy>=1.24.3,<2.0.0",
-    "opencv-python>=4.8.1.78",
+    "opencv-python>=4.8.0,<5.0.0",
     "mediapipe>=0.10.8,<0.11.0",
-    "PyYAML>=6.0.1",
-    "pydantic>=2.5.3",
-    "websockets>=12.0",
+    "PyYAML>=6.0.1,<7.0.0",
+    "pydantic>=2.5.0,<3.0.0",
+    "websockets>=12.0,<13.0",
 ]
 
 # Add macOS-specific dependencies
@@ -34,21 +35,19 @@ setup(
     install_requires=install_requires,
     extras_require={
         "dev": [
-            "ruff>=0.7.0",
-            "black>=24.8.0",
-            "mypy>=1.11.0",
-            "pytest>=8.3.0",
-            "pytest-asyncio>=0.24.0",
-            "pre-commit>=3.8.0",
+            "ruff>=0.7.0,<1.0.0",
+            "black>=24.8.0,<25.0.0",
+            "mypy>=1.11.0,<2.0.0",
+            "pytest>=8.3.0,<9.0.0",
+            "pytest-asyncio>=0.24.0,<1.0.0",
+            "pytest-cov>=5.0.0,<6.0.0",
+            "pre-commit>=3.8.0,<4.0.0",
         ],
     },
     entry_points={
         "console_scripts": [
             "glide=glide.app.main:main",
         ],
-    },
-    package_data={
-        "glide": ["io/defaults.yaml"],  # Keep for backwards compatibility
     },
     data_files=[
         ("configs", ["configs/defaults.yaml"]),

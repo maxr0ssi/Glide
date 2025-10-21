@@ -20,6 +20,12 @@ def test_features_imports():
 def test_runtime_imports():
     """Test that runtime modules can be imported."""
 
+    # Platform-specific imports
+    import platform
+
+    if platform.system() == "Darwin":
+        pass
+
 
 def test_config_loading():
     """Test that configuration can be loaded."""

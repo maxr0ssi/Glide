@@ -1,38 +1,32 @@
-# Glide HUD - Native macOS Heads-Up Display
+# Glide HUD - Pulse Ring Indicator
 
-The Glide HUD is a native macOS application that provides visual feedback for gesture control without interfering with your workflow.
+The Glide HUD is a minimal macOS indicator that provides subtle visual feedback for gesture control without interfering with your workflow.
 
 ## Architecture Overview
 
 The HUD system consists of two main components:
 
 1. **Python Backend** - Handles gesture detection and broadcasts events via WebSocket
-2. **Swift Frontend** - Native macOS app that displays the HUD overlay
+2. **Swift Frontend** - Native macOS app that displays the Pulse Ring indicator
 
 ## Features
 
-### Display Modes
+### Pulse Ring Design
 
-- **Minimized Mode (300x150px)**
-  - Direction arrows indicate scroll direction
-  - Speed bars show scroll velocity
-  - Auto-hides after 2 seconds of inactivity
-  - Minimal CPU usage
+- **Minimal 32x32px indicator**
+  - Positioned in top-right corner (20px margins)
+  - 5 distinct states with smooth animations
+  - Context menu for quick settings
+  - Hover interactions
 
-- **Expanded Mode (500x400px)**
-  - Everything from minimized mode
-  - Live camera feed with hand tracking overlay
-  - TouchProof status indicator
-  - Stays visible (no auto-hide)
-  - Camera frames throttled to maintain performance
+### Visual States
 
-### Visual Design
-
-The HUD features a "liquid nitrogen ice" aesthetic:
-- Translucent white glass appearance
-- Frost effects and crystalline borders
-- Ice particle animations during scrolling
-- Cyan glow when TouchProof is active
+The Pulse Ring has 5 distinct states:
+- **Idle**: Subtle breathing pulse (0.6-0.8 opacity)
+- **Active**: Bright cyan ring when TouchProof is engaged
+- **Scrolling Up**: Upward arrow animation
+- **Scrolling Down**: Downward arrow animation
+- **Hidden**: Completely faded out
 
 ## Technical Implementation
 
@@ -59,44 +53,19 @@ The Python backend broadcasts events to `ws://127.0.0.1:8765/hud`:
   "active": true,
   "hands": 2
 }
-
-// Camera frame (expanded mode only)
-{
-  "type": "camera",
-  "frame": "<base64-jpeg>",
-  "width": 320,
-  "height": 240
-}
-
-// Initial configuration
-{
-  "type": "config",
-  "position": "bottom-right",
-  "opacity": 0.85
-}
-```
-
-The Swift HUD can send:
-```json
-// Mode change notification
-{
-  "type": "mode",
-  "expanded": true
-}
 ```
 
 ### Performance Optimizations
 
-1. **Camera Streaming**
-   - Only sent when HUD is in expanded mode
-   - Frames throttled to ~20 FPS
-   - JPEG compression at 50% quality
-   - Resolution reduced to 320px width
+1. **Minimal Resource Usage**
+   - 32x32px indicator uses minimal GPU resources
+   - CAShapeLayer for efficient rendering
+   - Hardware-accelerated animations
 
 2. **Event Throttling**
    - Scroll events: 60 Hz maximum
-   - Camera frames: 30 Hz maximum (effective ~20 FPS)
    - TouchProof: Only on state changes
+   - Auto-hide after 2 seconds of inactivity
 
 3. **Thread Safety**
    - All UI updates wrapped in `DispatchQueue.main.async`

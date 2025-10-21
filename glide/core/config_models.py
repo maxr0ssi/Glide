@@ -1,7 +1,7 @@
 """Pydantic models for configuration validation."""
 
-from pydantic import BaseModel, Field, field_validator, model_validator
 import yaml
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class GatesConfig(BaseModel):
@@ -61,12 +61,6 @@ class ScrollConfig(BaseModel):
     hud_ws_port: int = Field(8765, ge=1024, le=65535, description="WebSocket port (localhost only)")
     hud_ws_token: str | None = Field(None, description="Security token (auto-generated if None)")
     hud_throttle_hz: int = Field(60, ge=30, le=120, description="WebSocket throttle rate in Hz")
-    camera_throttle_hz: int = Field(
-        30, ge=10, le=60, description="Camera frame throttle rate in Hz"
-    )
-    camera_frame_skip: int = Field(
-        3, ge=1, le=10, description="Only publish every Nth camera frame"
-    )
 
 
 class OpticalFlowConfig(BaseModel):

@@ -49,7 +49,7 @@ For the HUD camera preview:
 
 ## Configuration
 
-Edit `glide/io/defaults.yaml` to customize scrolling behavior:
+Edit `configs/defaults.yaml` to customize scrolling behavior:
 
 ```yaml
 scroll:
@@ -92,7 +92,7 @@ Glide uses a modern velocity-based scrolling approach:
 
 - `glide/gestures/velocity_tracker.py` - Velocity calculation with EMA smoothing
 - `glide/gestures/velocity_controller.py` - State management
-- `glide/runtime/actions/continuous_scroll.py` - macOS event generation
+- `glide/runtime/actions/scroll.py` - macOS event generation
 - `glide/runtime/actions/velocity_dispatcher.py` - Gesture lifecycle
 - `glide/runtime/ipc/ws.py` - WebSocket broadcaster for HUD
 - `apps/hud-macos/` - Native Swift HUD application

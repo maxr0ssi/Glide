@@ -1,5 +1,5 @@
 ## Macro Flow Diagrams
-
+Diagrams by Claude
 High-level ASCII diagrams of the proposed architecture, using simple characters (| / \ - =).
 
 ### 1) System overview
@@ -38,11 +38,11 @@ High-level ASCII diagrams of the proposed architecture, using simple characters 
  |           | ContinuousScrollAction |               |
  |           |  (Quartz, phases)      |               |
  |           +-----------+------------+               |
- +-----------------------|----------------------------+               
-                         |                                           
-                         v                                           
-                 posts native scroll                                  
-                                                                        
+ +-----------------------|----------------------------+
+                         |
+                         v
+                 posts native scroll
+
                  +---------------------+      WebSocket       +-------------------+
                  |  HUD macOS App     | <------------------- |    WS (backend)   |
                  | (Native Swift/AppKit)|                     +-------------------+
@@ -101,7 +101,7 @@ Backend WS (127.0.0.1:PORT)
 HUD (Native Swift App)
    |
    +-- connect ws://127.0.0.1:PORT/hud?token=XYZ
-   +-- auto-reconnect with backoff  
+   +-- auto-reconnect with backoff
    +-- update native UI on messages
    +-- two modes:
        - minimized: render arrows + speed bars only
@@ -114,7 +114,7 @@ HUD (Native Swift App)
 glide/ (backend)
  |-- perception/ -> features/ -> gestures/ -> runtime/actions/
  |                                                   |
- |                                                   +-> continuous_scroll.py (Quartz)
+ |                                                   +-> scroll.py
  |                                                   |
  |                                                   +-> velocity_dispatcher.py
  |
@@ -126,5 +126,3 @@ apps/
 dev/
  |-- preview/overlay.py (debug-only)
 ```
-
-

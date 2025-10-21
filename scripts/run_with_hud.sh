@@ -77,10 +77,10 @@ fi
 echo "🖥️  Building and starting HUD..."
 cd apps/hud-macos
 
-# Build in release mode if needed
-if [ ! -f .build/release/GlideHUD ] || [ "$(find Sources -newer .build/release/GlideHUD 2>/dev/null)" ]; then
+# Build in debug mode if needed
+if [ ! -f .build/debug/GlideHUD ] || [ "$(find Sources -newer .build/debug/GlideHUD 2>/dev/null)" ]; then
     echo "  Building HUD (this may take a moment)..."
-    swift build --configuration release
+    swift build
     if [ $? -ne 0 ]; then
         echo "❌ Failed to build HUD"
         exit 1
@@ -89,10 +89,13 @@ else
     echo "  Using existing HUD build"
 fi
 
-# Run the HUD
-swift run --configuration release &
+# Run the HUD in debug mode for better visibility
+swift run &
 HUD_PID=$!
 echo "  HUD started (PID: $HUD_PID)"
+
+# Give HUD time to initialize window properly
+sleep 1
 
 cd ../..
 

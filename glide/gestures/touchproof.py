@@ -1,14 +1,20 @@
+"""TouchProof multi-signal gesture detection system.
+
+This module implements the TouchProof technology for detecting subtle fingertip
+gestures using multiple signals including proximity, angle, and optical flow.
+"""
+
 from __future__ import annotations
 
+import math
 from collections import deque
 from dataclasses import dataclass
-import math
 
 import cv2
 import numpy as np
 
-from glide.core.types import GateState, Landmark
 from glide.core.config_models import TouchProofConfig
+from glide.core.types import GateState, Landmark
 from glide.features.alignment import HandAligner
 
 

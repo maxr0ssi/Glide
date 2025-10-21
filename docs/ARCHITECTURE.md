@@ -71,9 +71,8 @@ apps/
 - Integrates runtime actions for platform functionality
 
 ### 7. **Configuration & I/O** (`io/`)
-- **defaults.yaml**: YAML-based configuration with sensible defaults
-- **event_output**: JSON event streaming to stdout
-- **replay**: Record and replay sessions for testing
+- **config.py**: Configuration loading and management
+- Configuration files stored in `configs/` directory
 
 ## Key Design Principles
 
@@ -149,7 +148,7 @@ Camera → Frame → HandDetector → Landmarks → HandAligner → Features
 
 ## Configuration
 
-The system loads configuration from `glide/io/defaults.yaml`:
+The system loads configuration from `configs/defaults.yaml`:
 
 ```yaml
 # TouchProof detection

@@ -142,9 +142,9 @@ config.optical_flow  # Optical flow settings
 Implement continuous scrolling:
 
 ```python
-from glide.runtime.actions.continuous_scroll import ContinuousScrollAction
+from glide.runtime.actions.scroll import ScrollAction
 
-class MyCustomScrollAction(ContinuousScrollAction):
+class MyCustomScrollAction(ScrollAction):
     def begin_gesture(self, velocity: Vec2D) -> bool:
         # Start scrolling
         pass

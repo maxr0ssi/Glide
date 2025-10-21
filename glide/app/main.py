@@ -28,6 +28,11 @@ from glide.runtime.ipc.ws import WebSocketBroadcaster
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments for Glide application.
+
+    Returns:
+        argparse.Namespace: Parsed command-line arguments
+    """
     p = argparse.ArgumentParser(description="Glide - Gesture Detection")
     p.add_argument("--config", type=str, default="configs/defaults.yaml")
     p.add_argument("--debug", action="store_true")
@@ -72,7 +77,6 @@ def main() -> None:
                 port=args.hud_port or config.scroll.hud_ws_port,
                 session_token=args.hud_token or config.scroll.hud_ws_token,
                 throttle_hz=config.scroll.hud_throttle_hz,
-                camera_throttle_hz=config.scroll.camera_throttle_hz,
             )
             logging.info(
                 f"WebSocket HUD broadcaster started on ws://127.0.0.1:{ws_broadcaster.port}/hud"
@@ -128,12 +132,6 @@ def main() -> None:
 
             # Publish camera frame to HUD if WebSocket is enabled
             # Only publish every Nth frame as configured
-            if (
-                ws_broadcaster
-                and frame.image is not None
-                and frame_count % config.scroll.camera_frame_skip == 0
-            ):
-                ws_broadcaster.publish_camera_frame(frame.image)
 
             detection = hands.detect(frame.image)
 

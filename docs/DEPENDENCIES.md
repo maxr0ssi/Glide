@@ -5,14 +5,14 @@ This document tracks all external dependencies for the Glide project, including 
 ## Runtime Dependencies
 
 ### pyobjc-framework-Quartz
-- **Version**: >= 8.0
+- **Version**: >= 10.1
 - **Purpose**: Access to macOS Quartz Event Services for generating native scroll events
-- **Used by**: `glide.runtime.actions.quartz_scroll`
+- **Used by**: `glide.runtime.actions.scroll`
 - **Alternatives Considered**:
   - **pynput**: Cross-platform but less native integration, higher latency
   - **pyautogui**: No smooth scrolling support, keyboard simulation only
   - **cython + native**: Too complex for initial implementation
-- **Removal Plan**: Will be removed if/when we implement native Swift helper app (v2)
+- **Removal Plan**: Core dependency for macOS scrolling, no removal planned
 
 ### opencv-python (cv2)
 - **Version**: >= 4.5.0

@@ -1,7 +1,5 @@
-# Pre-commit configuration for Glide
-# Install with: pre-commit install
-# Run manually: pre-commit run --all-files
-
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
@@ -11,30 +9,65 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
         args: ['--maxkb=1000']
+      - id: check-json
       - id: check-merge-conflict
       - id: check-toml
       - id: debug-statements
-        exclude: '^(glide/app/main\.py|setup_models\.py)$'
-
-  # Ruff temporarily disabled; re-enable when codebase passes ruff cleanly
-  # - repo: https://github.com/astral-sh/ruff-pre-commit
-  #   rev: v0.7.0
-  #   hooks:
-  #     - id: ruff
-  #       args: [--fix, --exit-non-zero-on-fix]
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: check-ast
 
   - repo: https://github.com/psf/black
     rev: 24.8.0
     hooks:
       - id: black
         language_version: python3.10
+        args: ['--line-length=100']
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.7.0
+    hooks:
+      - id: ruff
+        args: ['--fix', '--exit-non-zero-on-fix']
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.0
     hooks:
       - id: mypy
         additional_dependencies:
-          - types-PyYAML
+          - types-pyyaml
           - types-requests
+          - numpy
           - pydantic
-        exclude: '^(tests/|setup\.py|setup_models\.py)$'
+        args: ['--ignore-missing-imports', '--no-strict-optional']
+        exclude: ^(tests/|docs/|scripts/|examples/|apps/)
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ['--profile', 'black', '--line-length', '100']
+
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        args: ['-ll', '-i', '-x', 'tests,scripts']
+
+# Local hooks
+  - repo: local
+    hooks:
+      - id: no-print-statements
+        name: Check for print statements
+        entry: 'print\('
+        language: pygrep
+        types: [python]
+        exclude: ^(tests/|scripts/|examples/|dev/)
+
+      - id: no-pycache
+        name: No __pycache__ directories
+        entry: find . -name "__pycache__" -type d | grep -q . && exit 1 || exit 0
+        language: system
+        pass_filenames: false
+        always_run: true
+        description: Ensure no __pycache__ directories in repository

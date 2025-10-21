@@ -7,26 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added - Native macOS HUD Implementation (Phase 4)
-- **Implemented native Swift macOS HUD application**:
-  - Pure AppKit/Core Animation UI (no WebView)
-  - NSPanel floating window with CMD+CTRL+G hotkey activation
-  - Two display modes:
-    - Minimized (300x150px): Direction arrows and speed bars
-    - Expanded (500x400px): Adds live camera feed with hand tracking overlay
-  - "Liquid nitrogen ice" aesthetic with translucent glass effects
-  - Auto-hide in minimized mode (2s delay), always visible in expanded
-  - TouchProof status indicator with cyan glow when active
-  - Performance optimized camera streaming (throttled, JPEG compression)
+### Added - Pulse Ring HUD Implementation (Phase 4)
+- **Implemented native Swift macOS HUD - Complete Redesign**:
+  - Minimal 32x32 Pulse Ring indicator (replaced glass effect design)
+  - Pure AppKit/Core Animation with CAShapeLayer
+  - 5 distinct states with smooth animations:
+    - Idle: subtle breathing pulse (0.6-0.8 opacity)
+    - Active: bright cyan ring when TouchProof engaged
+    - Scrolling Up/Down: directional arrow animations
+    - Hidden: fades out completely
+  - Smart positioning system (4 corners, 20px margins)
+  - Context menu for quick settings access
+  - Hover interactions with smooth scaling
+  - Auto-hide after 2s of inactivity
   - Thread-safe WebSocket communication with Python backend
-- **Extended WebSocket Protocol**:
-  - Added camera frame streaming: `{"type": "camera", "frame": base64, "width": int, "height": int}`
-  - Added TouchProof events: `{"type": "touchproof", "active": bool, "hands": int}`
-  - Added mode notifications: `{"type": "mode", "expanded": bool}`
-  - Camera frames only sent to clients in expanded mode
+- **Simplified WebSocket Protocol**:
+  - Core events: `{"type": "scroll", "vy": float, "speed": float}`
+  - TouchProof events: `{"type": "touchproof", "active": bool, "hands": int}`
+  - Hide events: `{"type": "hide"}`
+  - Removed camera streaming (not needed for minimal design)
 - **Created comprehensive documentation**:
-  - `docs/HUD.md` - Complete HUD architecture and usage guide
-  - Updated README.md with HUD setup instructions
+  - `docs/PULSE_RING_HUD_DESIGN.md` - Design specification
+  - Updated README.md with recruiter-focused content
   - Added run scripts for easy testing
 
 ### Changed - Code Quality Improvements
