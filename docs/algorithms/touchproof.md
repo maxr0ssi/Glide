@@ -2,13 +2,13 @@
 
 ## Overview
 
-TouchProof is an advanced fingertip contact detection system that combines scale-adaptive image analysis with distance-aware signal fusion. It solves the fundamental challenge of detecting 3D contact from 2D images across all hand distances.
+TouchProof detects when your fingertips touch by combining scale-adaptive image analysis with distance-aware signal fusion. It tackles the tricky problem of detecting 3D contact from 2D camera images across different hand distances.
 
-## Key Innovations
+## How It Works
 
 ### 1. **Scale-Adaptive Gapness**
 - Strip width automatically scales with finger size: `max(4px, 0.08 * finger_length_px)`
-- Two-scale averaging (6% and 10% of finger length) for robustness
+- Two-scale averaging (6% and 10% of finger length) for stability
 - Works consistently whether hand is 30cm or 100cm from camera
 
 ### 2. **Silhouette Valley Test (SVT)**
@@ -125,7 +125,7 @@ The HUD displays:
 
 - **Accuracy**: >95% correct detection across all distances
 - **Latency**: <5ms per frame on CPU
-- **Robustness**: Works with different hand sizes, lighting, backgrounds
+- **Flexibility**: Works with different hand sizes, lighting, backgrounds
 - **Stability**: No flickering due to EMA + hysteresis
 
-TouchProof represents a significant advance in 2D touch detection, achieving near-depth-sensor accuracy using only a regular camera.
+TouchProof gets surprisingly good touch detection from a regular 2D camera - close to what you'd get from a depth sensor.

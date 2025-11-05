@@ -1,6 +1,6 @@
 # Scrolling with Glide
 
-Glide enables hands-free scrolling on macOS using natural finger movements. Perfect for when your hands are messy from food!
+Glide does hands-free scrolling on macOS using finger movements. Perfect for when your hands are messy from food!
 
 ## How It Works
 

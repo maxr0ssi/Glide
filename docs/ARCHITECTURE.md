@@ -143,7 +143,7 @@ Camera → Frame → HandDetector → Landmarks → HandAligner → Features
 
 - **Latency**: <10ms per frame on CPU
 - **Frame Rate**: 30+ FPS on modern hardware
-- **Touch Detection**: Multi-signal fusion for robust detection
+- **Touch Detection**: Multi-signal fusion for reliable detection
 - **CPU Usage**: ~20-30% single core with preview window
 
 ## Configuration
