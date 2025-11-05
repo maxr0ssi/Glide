@@ -30,7 +30,7 @@ jobs:
       run: python -m build
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: python-dist
         path: dist/
@@ -62,7 +62,7 @@ jobs:
         hdiutil create -volname "GlideHUD" -srcfolder GlideHUD.app -ov -format UDZO GlideHUD-${{ matrix.arch }}.dmg
 
     - name: Upload HUD
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: macos-hud-${{ matrix.arch }}
         path: apps/hud-macos/GlideHUD-${{ matrix.arch }}.dmg
