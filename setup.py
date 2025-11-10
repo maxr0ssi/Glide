@@ -41,7 +41,7 @@ setup(
             "pytest>=8.3.0,<9.0.0",
             "pytest-asyncio>=0.24.0,<1.0.0",
             "pytest-cov>=5.0.0,<6.0.0",
-            "pre-commit>=3.8.0,<4.0.0",
+            "pre-commit>=3.8.0,<5.0.0",
         ],
     },
     entry_points={
