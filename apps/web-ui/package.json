@@ -1,16 +1,25 @@
 {
-  "name": "@glide/web-ui",
+  "name": "@maxr0ssi/glide-web-ui",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxr0ssi/Glide.git",
+    "directory": "apps/web-ui"
+  },
   "scripts": {
     "dev": "vite --port 5175",
     "build": "tsc -b && vite build",
+    "build:lib": "vite build --mode lib && tsc -p tsconfig.lib.json",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "prepublishOnly": "npm run build:lib"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.18",
