@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Web UI**: Browser-based demo of Glide gesture detection (`apps/web-ui/`)
+  - TypeScript port of core detection algorithms (alignment, kinematics, poses, TouchProof, velocity)
+  - React `<GlideDemo />` component with split-view UX (visualizer + scroll area)
+  - `useGlide` hook for custom integrations
+  - Library build mode for embedding in external React apps
+  - 78 unit tests cross-validated against Python implementation
+  - MediaPipe WebAssembly hand detection (no server required)
+
 ## [1.0.0] - 2025-11-04
 
 ### Added

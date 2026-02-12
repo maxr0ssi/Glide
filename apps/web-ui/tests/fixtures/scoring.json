@@ -1,0 +1,267 @@
+{
+  "scoreProximity": [
+    {
+      "input": {
+        "distanceNorm": 0.0,
+        "enter": 0.25,
+        "exit": 0.4
+      },
+      "expected": 1.0
+    },
+    {
+      "input": {
+        "distanceNorm": 0.1,
+        "enter": 0.25,
+        "exit": 0.4
+      },
+      "expected": 1.0
+    },
+    {
+      "input": {
+        "distanceNorm": 0.25,
+        "enter": 0.25,
+        "exit": 0.4
+      },
+      "expected": 1.0
+    },
+    {
+      "input": {
+        "distanceNorm": 0.325,
+        "enter": 0.25,
+        "exit": 0.4
+      },
+      "expected": 0.5
+    },
+    {
+      "input": {
+        "distanceNorm": 0.4,
+        "enter": 0.25,
+        "exit": 0.4
+      },
+      "expected": 0.0
+    },
+    {
+      "input": {
+        "distanceNorm": 0.5,
+        "enter": 0.25,
+        "exit": 0.4
+      },
+      "expected": 0.0
+    },
+    {
+      "input": {
+        "distanceNorm": 0.8,
+        "enter": 0.25,
+        "exit": 0.4
+      },
+      "expected": 0.0
+    }
+  ],
+  "scoreAngle": [
+    {
+      "input": {
+        "angleDeg": 0.0,
+        "enter": 24.0,
+        "exit": 32.0
+      },
+      "expected": 1.0
+    },
+    {
+      "input": {
+        "angleDeg": 10.0,
+        "enter": 24.0,
+        "exit": 32.0
+      },
+      "expected": 1.0
+    },
+    {
+      "input": {
+        "angleDeg": 24.0,
+        "enter": 24.0,
+        "exit": 32.0
+      },
+      "expected": 1.0
+    },
+    {
+      "input": {
+        "angleDeg": 28.0,
+        "enter": 24.0,
+        "exit": 32.0
+      },
+      "expected": 0.5
+    },
+    {
+      "input": {
+        "angleDeg": 32.0,
+        "enter": 24.0,
+        "exit": 32.0
+      },
+      "expected": 0.0
+    },
+    {
+      "input": {
+        "angleDeg": 45.0,
+        "enter": 24.0,
+        "exit": 32.0
+      },
+      "expected": 0.0
+    }
+  ],
+  "scoreVisibility": [
+    {
+      "input": {
+        "visA": null,
+        "visB": null,
+        "asymmetryMin": 0.12
+      },
+      "expected": 0.5
+    },
+    {
+      "input": {
+        "visA": 0.9,
+        "visB": 0.7,
+        "asymmetryMin": 0.12
+      },
+      "expected": 1.0
+    },
+    {
+      "input": {
+        "visA": 0.9,
+        "visB": 0.84,
+        "asymmetryMin": 0.12
+      },
+      "expected": 0.5
+    },
+    {
+      "input": {
+        "visA": 0.5,
+        "visB": 0.5,
+        "asymmetryMin": 0.12
+      },
+      "expected": 0.0
+    }
+  ],
+  "pearsonCorrelation": [
+    {
+      "input": {
+        "a": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "b": [
+          2,
+          4,
+          6,
+          8
+        ]
+      },
+      "expected": 1.0
+    },
+    {
+      "input": {
+        "a": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "b": [
+          8,
+          6,
+          4,
+          2
+        ]
+      },
+      "expected": -1.0
+    },
+    {
+      "input": {
+        "a": [
+          5,
+          5,
+          5
+        ],
+        "b": [
+          3,
+          3,
+          3
+        ]
+      },
+      "expected": 1.0
+    },
+    {
+      "input": {
+        "a": [
+          1,
+          2,
+          3
+        ],
+        "b": [
+          5,
+          5,
+          5
+        ]
+      },
+      "expected": 0.0
+    }
+  ],
+  "getAdaptiveWeights": [
+    {
+      "input": {
+        "distanceFactor": 0.0
+      },
+      "expected": {
+        "proximity": 0.4,
+        "angle": 0.3,
+        "mfc": 0.25,
+        "occlusion": 0.05
+      }
+    },
+    {
+      "input": {
+        "distanceFactor": 0.3
+      },
+      "expected": {
+        "proximity": 0.4,
+        "angle": 0.3,
+        "mfc": 0.25,
+        "occlusion": 0.05
+      }
+    },
+    {
+      "input": {
+        "distanceFactor": 0.5
+      },
+      "expected": {
+        "proximity": 0.425,
+        "angle": 0.25,
+        "mfc": 0.275,
+        "occlusion": 0.05
+      }
+    },
+    {
+      "input": {
+        "distanceFactor": 0.7
+      },
+      "expected": {
+        "proximity": 0.45,
+        "angle": 0.2,
+        "mfc": 0.3,
+        "occlusion": 0.05
+      }
+    },
+    {
+      "input": {
+        "distanceFactor": 1.0
+      },
+      "expected": {
+        "proximity": 0.45,
+        "angle": 0.2,
+        "mfc": 0.3,
+        "occlusion": 0.05
+      }
+    }
+  ]
+}

@@ -180,3 +180,7 @@ events.jsonl
 apps/hud-macos/.build/
 apps/hud-macos/.swiftpm/
 apps/hud-macos/Package.resolved
+
+# Web UI build artifacts
+apps/web-ui/node_modules/
+apps/web-ui/dist/
