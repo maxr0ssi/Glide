@@ -22,6 +22,13 @@ help:
 	@echo "  make test         - Run tests"
 	@echo "  make clean        - Clean build artifacts"
 	@echo "  make models       - Download MediaPipe models"
+	@echo ""
+	@echo "Web UI Commands:"
+	@echo "  make web-setup    - Install web UI dependencies"
+	@echo "  make web-dev      - Start web UI dev server"
+	@echo "  make web-build    - Build web UI for production"
+	@echo "  make web-test     - Run web UI tests"
+	@echo "  make web-lint     - Lint web UI code"
 
 # Setup virtual environment and dependencies
 .PHONY: setup
@@ -134,6 +141,7 @@ clean:
 	@rm -rf .ruff_cache
 	@rm -rf build/ dist/ *.egg-info
 	@cd apps/hud-macos && swift package clean
+	@rm -rf $(WEB_DIR)/node_modules $(WEB_DIR)/dist
 	@echo "✓ Cleaned"
 
 # Kill any running processes on port 8765
@@ -141,6 +149,31 @@ clean:
 kill-port:
 	@echo "Killing processes on port 8765..."
 	@lsof -ti:8765 | xargs kill -9 2>/dev/null || true
+
+# ──────────────────────────────────────
+# Web UI targets
+# ──────────────────────────────────────
+WEB_DIR := apps/web-ui
+
+.PHONY: web-setup
+web-setup:
+	cd $(WEB_DIR) && npm install
+
+.PHONY: web-dev
+web-dev:
+	cd $(WEB_DIR) && npm run dev
+
+.PHONY: web-build
+web-build:
+	cd $(WEB_DIR) && npm run build
+
+.PHONY: web-test
+web-test:
+	cd $(WEB_DIR) && npm test
+
+.PHONY: web-lint
+web-lint:
+	cd $(WEB_DIR) && npm run typecheck
 
 # Watch for file changes (requires fswatch)
 .PHONY: watch

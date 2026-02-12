@@ -107,6 +107,43 @@ This document tracks all external dependencies for the Glide project, including 
 - **Size**: ~8MB
 - **Location**: `models/gesture_recognizer.task`
 
+## Web UI Dependencies (TypeScript/React)
+
+### @mediapipe/tasks-vision
+- **Version**: ^0.10.18
+- **Purpose**: Hand landmark detection in browser via WebAssembly
+- **Used by**: `apps/web-ui/src/perception/hand-detector.ts`
+- **Alternatives Considered**:
+  - **TensorFlow.js HandPose**: Heavier, more dependencies
+  - **Custom ONNX model**: Requires model conversion pipeline
+- **Removal Plan**: Core dependency for web hand detection
+
+### react / react-dom
+- **Version**: ^18.0.0
+- **Purpose**: UI framework for demo component and visualizer
+- **Used by**: `apps/web-ui/src/components/`, `apps/web-ui/src/hooks/`
+- **Alternatives Considered**:
+  - **Vanilla JS**: More code, harder to maintain
+  - **Svelte**: Less ecosystem support for component libraries
+- **Removal Plan**: Core dependency, peer dependency for library consumers
+
+### vite
+- **Version**: ^6.0.3
+- **Purpose**: Dev server and production bundler (standalone + library mode)
+- **Used by**: Build toolchain
+- **Alternatives Considered**:
+  - **webpack**: More complex configuration
+  - **esbuild**: No built-in dev server
+- **Removal Plan**: Build-time only
+
+### vitest
+- **Version**: ^2.1.8
+- **Purpose**: Test runner (Jest-compatible API, native ESM/TS support)
+- **Used by**: `apps/web-ui/tests/`
+- **Alternatives Considered**:
+  - **Jest**: Slower ESM support, more config
+- **Removal Plan**: Dev-time only
+
 ## Native HUD Dependencies (Swift)
 
 ### macOS SDK
