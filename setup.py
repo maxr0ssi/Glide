@@ -36,7 +36,7 @@ setup(
     extras_require={
         "dev": [
             "ruff>=0.7.0,<1.0.0",
-            "black>=24.8.0,<25.0.0",
+            "black>=24.8.0,<27.0.0",
             "mypy>=1.11.0,<2.0.0",
             "pytest>=8.3.0,<9.0.0",
             "pytest-asyncio>=0.24.0,<1.0.0",
