@@ -184,3 +184,9 @@ apps/hud-macos/Package.resolved
 # Web UI build artifacts
 apps/web-ui/node_modules/
 apps/web-ui/dist/
+
+# Vite cache
+.vite/
+
+# Root node_modules (from accidental root installs)
+/node_modules/

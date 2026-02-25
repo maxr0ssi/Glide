@@ -1,3 +1,5 @@
+import './styles/glide-demo.css';
+
 export { GlideDemo } from './components/GlideDemo';
 export { useGlide } from './hooks/useGlide';
 export type {

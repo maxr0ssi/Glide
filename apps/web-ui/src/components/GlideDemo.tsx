@@ -29,8 +29,10 @@ export const GlideDemo: React.FC<GlideDemoProps> = ({
 }) => {
   const glide = useGlide({ modelPath, config });
 
+  const demoOnly = scrollContent === null;
+
   return (
-    <div className={`glide-demo ${className}`} style={style}>
+    <div className={`glide-demo ${demoOnly ? 'glide-demo--full' : ''} ${className}`} style={style}>
       {showVisualizer && (
         <Visualizer
           videoRef={glide.videoRef}
@@ -43,13 +45,15 @@ export const GlideDemo: React.FC<GlideDemoProps> = ({
           error={glide.error}
         />
       )}
-      <ScrollArea
-        velocity={glide.velocity}
-        gestureState={glide.gestureState}
-        isActive={glide.gestureState === GestureState.SCROLLING}
-      >
-        {scrollContent}
-      </ScrollArea>
+      {!demoOnly && (
+        <ScrollArea
+          velocity={glide.velocity}
+          gestureState={glide.gestureState}
+          isActive={glide.gestureState === GestureState.SCROLLING}
+        >
+          {scrollContent}
+        </ScrollArea>
+      )}
     </div>
   );
 };

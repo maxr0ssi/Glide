@@ -9,6 +9,12 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Full-width demo mode (no scroll area) */
+.glide-demo--full .glide-visualizer {
+  flex: 1 1 100%;
+  border-right: none;
+}
+
 /* Responsive: stack on mobile */
 @media (max-width: 768px) {
   .glide-demo {
