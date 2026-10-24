@@ -18,6 +18,11 @@ import { VelocityTracker } from '../gestures/velocity-tracker';
 import type { Vec2D } from '../gestures/velocity-tracker';
 import { VelocityController, GestureState } from '../gestures/velocity-controller';
 import { WebHandDetector } from '../perception/hand-detector';
+import {
+  CAMERA_MESSAGES,
+  cameraApiAvailable,
+  describeCameraError,
+} from '../perception/camera-errors';
 
 export interface UseGlideOptions {
   modelPath?: string;
@@ -44,7 +49,6 @@ export function useGlide(options: UseGlideOptions = {}): UseGlideReturn {
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animFrameRef = useRef<number>(0);
   const frameCountRef = useRef(0);
   const lastFpsTimeRef = useRef(0);
 
@@ -62,7 +66,6 @@ export function useGlide(options: UseGlideOptions = {}): UseGlideReturn {
   );
 
   // Pipeline objects stored in refs to avoid recreation
-  const detectorRef = useRef<WebHandDetector | null>(null);
   const kinematicsRef = useRef<KinematicsTracker | null>(null);
   const touchproofRef = useRef<TouchProofDetector | null>(null);
   const velocityTrackerRef = useRef<VelocityTracker | null>(null);
@@ -82,14 +85,11 @@ export function useGlide(options: UseGlideOptions = {}): UseGlideReturn {
     velocityControllerRef.current = new VelocityController();
   }, []);
 
-  const processFrame = useCallback(() => {
+  /** Run the pipeline on one video frame. Scheduling is owned by the effect. */
+  const processFrame = useCallback((detector: WebHandDetector) => {
     const video = videoRef.current;
-    const detector = detectorRef.current;
 
-    if (!video || !detector?.isReady || video.readyState < 2) {
-      animFrameRef.current = requestAnimationFrame(processFrame);
-      return;
-    }
+    if (!video || !detector.isReady || video.readyState < 2) return;
 
     const timestampMs = performance.now();
     const width = video.videoWidth;
@@ -159,36 +159,65 @@ export function useGlide(options: UseGlideOptions = {}): UseGlideReturn {
       frameCountRef.current = 0;
       lastFpsTimeRef.current = timestampMs;
     }
-
-    animFrameRef.current = requestAnimationFrame(processFrame);
   }, []);
 
   useEffect(() => {
     if (!enabled) return;
 
+    // Everything below is owned by this run of the effect. Cleanup must not
+    // read videoRef: React has already detached it by the time an unmount
+    // cleanup runs, so the stream and element are tracked locally instead.
     let cancelled = false;
+    let stream: MediaStream | null = null;
+    let attachedVideo: HTMLVideoElement | null = null;
+    let rafId: number | null = null;
     const detector = new WebHandDetector();
-    detectorRef.current = detector;
+
+    const stopStream = (s: MediaStream | null) => {
+      s?.getTracks().forEach((t) => t.stop());
+    };
+
+    const loop = () => {
+      rafId = null;
+      if (cancelled) return;
+      processFrame(detector);
+      if (!cancelled) rafId = requestAnimationFrame(loop);
+    };
 
     const startPipeline = async () => {
       setIsLoading(true);
       setError(null);
+      // Only getUserMedia failures get camera-specific messages; play() can
+      // also reject with NotAllowedError (autoplay), which is not a permission issue.
+      let requestingCamera = true;
 
       try {
-        // Start camera
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
-        });
-
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
+        if (!cameraApiAvailable()) {
+          setError(CAMERA_MESSAGES.unavailable);
+          setIsLoading(false);
           return;
         }
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
+        // Start camera
+        const s = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+        });
+
+        // Unmounted (or re-run under StrictMode) while the prompt was open.
+        if (cancelled) {
+          stopStream(s);
+          return;
         }
+        stream = s;
+        requestingCamera = false;
+
+        const video = videoRef.current;
+        if (video) {
+          attachedVideo = video;
+          video.srcObject = s;
+          await video.play();
+        }
+        if (cancelled) return;
 
         // Initialize MediaPipe
         await detector.initialize({ modelPath });
@@ -202,19 +231,18 @@ export function useGlide(options: UseGlideOptions = {}): UseGlideReturn {
         setIsLoading(false);
 
         // Start processing loop
-        animFrameRef.current = requestAnimationFrame(processFrame);
+        rafId = requestAnimationFrame(loop);
       } catch (err) {
         if (cancelled) return;
-        const message =
-          err instanceof Error ? err.message : 'Failed to initialize Glide';
+        // The camera may have started before a later step failed.
+        stopStream(stream);
+        stream = null;
+        if (attachedVideo) attachedVideo.srcObject = null;
 
-        if (message.includes('Permission') || message.includes('NotAllowed')) {
-          setError('Camera access denied. Please allow camera access and reload.');
-        } else if (message.includes('NotFound') || message.includes('DevicesNotFound')) {
-          setError('No camera found. Please connect a camera and reload.');
-        } else {
-          setError(message);
-        }
+        const message =
+          (requestingCamera ? describeCameraError(err) : null) ??
+          (err instanceof Error ? err.message : 'Failed to initialize Glide');
+        setError(message);
         setIsLoading(false);
       }
     };
@@ -223,17 +251,20 @@ export function useGlide(options: UseGlideOptions = {}): UseGlideReturn {
 
     return () => {
       cancelled = true;
-      cancelAnimationFrame(animFrameRef.current);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = null;
 
       // Stop camera
-      const video = videoRef.current;
-      if (video?.srcObject) {
-        (video.srcObject as MediaStream).getTracks().forEach((t) => t.stop());
-        video.srcObject = null;
+      stopStream(stream);
+      stream = null;
+      if (attachedVideo) {
+        attachedVideo.pause();
+        attachedVideo.srcObject = null;
+        attachedVideo = null;
       }
 
       detector.destroy();
-      detectorRef.current = null;
+      setIsReady(false);
     };
   }, [enabled, modelPath, initPipeline, processFrame]);
 

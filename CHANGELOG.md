@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 78 unit tests cross-validated against Python implementation
   - MediaPipe WebAssembly hand detection (no server required)
 
+### Fixed
+- **Web UI 0.1.4** (`@maxr0ssi/glide-web-ui`)
+  - Camera stays on after the component unmounts (browser Back, remounts). `useGlide` now owns the
+    `MediaStream` and stops every track on cleanup, including streams that resolve after unmount and
+    StrictMode double effects, and detaches `srcObject`
+  - The frame loop is owned by the effect and cancelled on unmount; a hand model that finishes loading
+    after unmount is closed instead of kept
+  - Camera errors are now specific: blocked by the user, unavailable on this page (Permissions-Policy,
+    SecurityError or no camera API), no camera found, or camera in use
+
 ## [1.0.0] - 2025-11-04
 
 ### Added

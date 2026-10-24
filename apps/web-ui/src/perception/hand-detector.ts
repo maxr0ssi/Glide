@@ -23,6 +23,7 @@ export interface WebHandDetectorOptions {
 export class WebHandDetector {
   private landmarker: HandLandmarker | null = null;
   private _ready = false;
+  private _destroyed = false;
 
   get isReady(): boolean {
     return this._ready;
@@ -34,7 +35,7 @@ export class WebHandDetector {
 
     const vision = await FilesetResolver.forVisionTasks(wasmPath);
 
-    this.landmarker = await HandLandmarker.createFromOptions(vision, {
+    const landmarker = await HandLandmarker.createFromOptions(vision, {
       baseOptions: {
         modelAssetPath: modelPath,
         delegate: 'GPU',
@@ -45,6 +46,13 @@ export class WebHandDetector {
       minTrackingConfidence: options?.minTrackingConfidence ?? 0.5,
     });
 
+    // destroy() was called while the model was loading: release it now.
+    if (this._destroyed) {
+      landmarker.close();
+      return;
+    }
+
+    this.landmarker = landmarker;
     this._ready = true;
   }
 
@@ -73,6 +81,7 @@ export class WebHandDetector {
   }
 
   destroy(): void {
+    this._destroyed = true;
     this.landmarker?.close();
     this.landmarker = null;
     this._ready = false;
