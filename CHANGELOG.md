@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 78 unit tests cross-validated against Python implementation
   - MediaPipe WebAssembly hand detection (no server required)
 
+### Changed
+- **Web UI publishing**: `publish-web-ui.yml` no longer publishes to GitHub Packages on every push to
+  main. It is now a manual `workflow_dispatch` publishing `@maxr0ssi/glide-web-ui` to registry.npmjs.org
+  with `--provenance --access public`, using npm trusted publishing (OIDC) or an `NPM_TOKEN` secret
+- **Web UI lint**: `npm run lint` works (ESLint flat config with typescript-eslint, react-hooks and
+  react-refresh) and runs in CI and `make web-lint`
+- **Web UI README**: package name and install instructions now match npm (`@maxr0ssi/glide-web-ui`,
+  styles via `@maxr0ssi/glide-web-ui/styles`)
+
 ### Fixed
 - **Web UI 0.1.4** (`@maxr0ssi/glide-web-ui`)
   - Camera stays on after the component unmounts (browser Back, remounts). `useGlide` now owns the

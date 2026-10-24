@@ -144,6 +144,15 @@ This document tracks all external dependencies for the Glide project, including 
   - **Jest**: Slower ESM support, more config
 - **Removal Plan**: Dev-time only
 
+### eslint + typescript-eslint + eslint-plugin-react-hooks + eslint-plugin-react-refresh (+ @eslint/js, globals)
+- **Version**: eslint ^9.15.0, typescript-eslint ^8.71, eslint-plugin-react-hooks ^7.1, eslint-plugin-react-refresh ^0.5, @eslint/js ^9.39, globals ^17
+- **Purpose**: `npm run lint` (flat config in `apps/web-ui/eslint.config.js`): TypeScript parsing and recommended rules, Rules of Hooks / exhaustive deps, Fast Refresh export checks
+- **Used by**: `apps/web-ui/eslint.config.js`, CI `web-ui` job
+- **Alternatives Considered**:
+  - **Biome**: One binary, but no Rules of Hooks equivalent as complete as the React plugin
+  - **tsc only**: Catches types, not hook misuse
+- **Removal Plan**: Dev-time only
+
 ## Native HUD Dependencies (Swift)
 
 ### macOS SDK

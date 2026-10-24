@@ -61,7 +61,8 @@ export function useGlide(options: UseGlideOptions = {}): UseGlideReturn {
   const [landmarks, setLandmarks] = useState<Landmark[] | null>(null);
   const [fps, setFps] = useState(0);
 
-  const configRef = useRef<AppConfig>(
+  // Fixed at mount; lazy init so the merge runs once rather than every render.
+  const [config] = useState<AppConfig>(() =>
     configOverrides ? mergeConfig(configOverrides) : createDefaultConfig(),
   );
 
@@ -75,15 +76,14 @@ export function useGlide(options: UseGlideOptions = {}): UseGlideReturn {
   const updateCountRef = useRef(0);
 
   const initPipeline = useCallback(() => {
-    const cfg = configRef.current;
     kinematicsRef.current = new KinematicsTracker(
-      cfg.kinematics.emaAlpha,
-      cfg.kinematics.bufferFrames,
+      config.kinematics.emaAlpha,
+      config.kinematics.bufferFrames,
     );
-    touchproofRef.current = new TouchProofDetector(cfg.touchproof);
+    touchproofRef.current = new TouchProofDetector(config.touchproof);
     velocityTrackerRef.current = new VelocityTracker();
     velocityControllerRef.current = new VelocityController();
-  }, []);
+  }, [config]);
 
   /** Run the pipeline on one video frame. Scheduling is owned by the effect. */
   const processFrame = useCallback((detector: WebHandDetector) => {
@@ -279,6 +279,6 @@ export function useGlide(options: UseGlideOptions = {}): UseGlideReturn {
     gestureState,
     landmarks,
     fps,
-    config: configRef.current,
+    config,
   };
 }
