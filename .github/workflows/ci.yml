@@ -171,6 +171,9 @@ jobs:
     - name: TypeScript check
       run: cd apps/web-ui && npx tsc --noEmit
 
+    - name: Lint
+      run: cd apps/web-ui && npm run lint
+
     - name: Run tests
       run: cd apps/web-ui && npx vitest run
 

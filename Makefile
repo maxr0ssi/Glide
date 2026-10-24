@@ -173,7 +173,7 @@ web-test:
 
 .PHONY: web-lint
 web-lint:
-	cd $(WEB_DIR) && npm run typecheck
+	cd $(WEB_DIR) && npm run typecheck && npm run lint
 
 # Watch for file changes (requires fswatch)
 .PHONY: watch

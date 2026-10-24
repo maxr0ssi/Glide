@@ -1,40 +1,95 @@
 name: Publish Web UI
 
+# Manual only: bump apps/web-ui/package.json "version", merge to main, then run this.
+#
+# Auth, one of:
+#   - npm trusted publishing (preferred): on npmjs.com, package settings -> Trusted Publisher ->
+#     GitHub Actions, repo maxr0ssi/Glide, workflow publish-web-ui.yml. Then set the repository
+#     variable NPM_TRUSTED_PUBLISHING=true so the token check below is skipped.
+#   - NPM_TOKEN repository secret: an npm granular access token with read/write on
+#     @maxr0ssi/glide-web-ui.
+
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/web-ui/**'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run npm publish --dry-run (nothing is uploaded)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: publish-web-ui
+  cancel-in-progress: false
 
 jobs:
   publish:
-    name: Build & Publish to GitHub Packages
+    name: Build & Publish to npmjs
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
+      id-token: write   # OIDC for trusted publishing and --provenance
+
+    defaults:
+      run:
+        working-directory: apps/web-ui
 
     steps:
+    - name: Check publish credentials
+      working-directory: .
+      env:
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        TRUSTED: ${{ vars.NPM_TRUSTED_PUBLISHING }}
+        DRY_RUN: ${{ inputs.dry_run }}
+        REF: ${{ github.ref }}
+      run: |
+        if [ "$DRY_RUN" != "true" ] && [ "$REF" != "refs/heads/main" ]; then
+          echo "::error::Real publishes run from main only (got $REF). Use dry_run for other branches."
+          exit 1
+        fi
+        if [ "$TRUSTED" = "true" ]; then
+          echo "Using npm trusted publishing (OIDC)."
+        elif [ -z "$NPM_TOKEN" ]; then
+          echo "::error::No npm credentials. Add an NPM_TOKEN repository secret (npm granular access token with read/write on @maxr0ssi/glide-web-ui), or configure npm trusted publishing for this workflow and set the repository variable NPM_TRUSTED_PUBLISHING=true."
+          exit 1
+        fi
+
     - uses: actions/checkout@v4
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
-        registry-url: 'https://npm.pkg.github.com'
+        # Node 24 ships npm 11, which trusted publishing needs (>= 11.5.1).
+        node-version: '24'
+        registry-url: 'https://registry.npmjs.org'
         cache: 'npm'
         cache-dependency-path: apps/web-ui/package-lock.json
 
+    - name: Check version is unpublished
+      run: |
+        name=$(node -p "require('./package.json').name")
+        version=$(node -p "require('./package.json').version")
+        if [ "$(npm view "$name@$version" version 2>/dev/null)" = "$version" ]; then
+          echo "::error::$name@$version is already on npm. Bump version in apps/web-ui/package.json first."
+          exit 1
+        fi
+        echo "Publishing $name@$version"
+
     - name: Install dependencies
-      run: cd apps/web-ui && npm ci
+      run: npm ci
+
+    - name: Typecheck
+      run: npm run typecheck
+
+    - name: Lint
+      run: npm run lint
 
     - name: Run tests
-      run: cd apps/web-ui && npx vitest run
+      run: npx vitest run
 
     - name: Build library
-      run: cd apps/web-ui && npm run build:lib
+      run: npm run build:lib
 
     - name: Publish
-      run: cd apps/web-ui && npm publish
+      run: npm publish --provenance --access public ${{ inputs.dry_run && '--dry-run' || '' }}
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
